@@ -18,7 +18,8 @@
     "express": "^4.16.4",
     "jsdom": "^13.1.0",
     "moment": "^2.24.0",
-    "node-fetch": "^2.3.0"
+    "node-fetch": "^2.3.0",
+    "snoowrap": "^1.15.2"
   },
   "devDependencies": {
     "nodemon": "^1.18.9"
