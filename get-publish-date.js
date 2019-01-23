@@ -1,5 +1,7 @@
 const fetch = require('node-fetch');
+const { JSDOM } = require('jsdom');
 const moment = require('moment');
+moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
 // Date Parsing
@@ -8,10 +10,16 @@ const moment = require('moment');
 function getArticleHtml(url) {
   return fetch(url)
     .then(response => {
-      return response.text();
+      const { status } = response;
+
+      if (status === 200) {
+        return response.text();
+      }
+
+      throw `Error: ${status}`;
     })
     .catch(error => {
-      console.log(error);
+      throw error;
     });
 }
 
@@ -32,9 +40,13 @@ function getDateFromHTML(html, url) {
   if (urlDate && isRecent(urlDate)) return urlDate;
 
   // Parse HTML document to search
-  const htmlDocument = document.implementation.createHTMLDocument('parser');
-  const article = htmlDocument.createElement('div');
-  article.innerHTML = html;
+  // const htmlDocument = document.implementation.createHTMLDocument('parser');
+  // const article = htmlDocument.createElement('div');
+  // article.innerHTML = html;
+  const dom = new JSDOM(html);
+  const article = dom.window.document;
+  // console.log(html)
+  // return null;
 
   // Some websites include linked data with information about the article
   publishDate = checkLinkedData(article, url);
@@ -104,6 +116,31 @@ function checkHTMLString(html, url) {
 
   if (dateArray && dateArray[1]) {
     let date = getMomentObject(dateArray[1]);
+    if (date) return date;
+  }
+
+  return null;
+}
+
+function checkURL(url) {
+  const skipDomains = ['cnn.com/videos'];
+  for (let domain of skipDomains) {
+    if (url.includes(domain)) return null;
+  }
+
+  const dateTest = /([\./\-_]{0,1}(19|20)\d{2})[\./\-_]{0,1}(([0-3]{0,1}[0-9][\./\-_])|(\w{3,5}[\./\-_]))([0-3]{0,1}[0-9][\./\-]{0,1})/;
+  let dateString = url.match(dateTest);
+
+  if (dateString) {
+    let date = getMomentObject(dateString[0]);
+    if (date) return date;
+  }
+
+  const singleDigitTest = /\/(\d{8})\//;
+  dateString = url.match(singleDigitTest);
+
+  if (dateString) {
+    let date = getMomentObject(dateString[0]);
     if (date) return date;
   }
 
@@ -561,21 +598,27 @@ function isRecent(date) {
 
 // Find the publish date from a passed URL 
 function getPublishDate(url) {
-  console.log('Fetching publish date');
-  if (!url) return;
+  return new Promise((resolve, reject) => {
+    try {
+      const urlObject = new URL(url);
 
-  getArticleHtml(url).then(html => {
-    if (!html) return;
+      getArticleHtml(urlObject)
+        .then(html => {
+          if (!html) reject('Error fetching HTML');
 
-    const htmlDate = getDateFromHTML(html, url);
-    console.log(htmlDate.format('MMMM Do, YYYY'))
-
-    // if (htmlDate) {
-    //   console.log('HTML Date:');
-    //   console.log(formatDate(htmlDate), getMomentObject(htmlDate));
-    // } else {
-    //   getSnapshot(url)
-    // }
+          const htmlDate = getDateFromHTML(html, url);
+          if (htmlDate) {
+            resolve(htmlDate.format('MMMM Do, YYYY'));
+          } else {
+            reject('No date found')
+          }
+        })
+      .catch(error => {
+        reject(error);
+      });
+    } catch(error) {
+      reject(`Invalid URL: ${url}`);
+    }
   });
 }
 
