@@ -1,5 +1,5 @@
 {
-  "name": "publishdatebot",
+  "name": "publish-date-bot",
   "version": "1.0.0",
   "description": "Looks for outdated articles on Reddit",
   "main": "index.js",
