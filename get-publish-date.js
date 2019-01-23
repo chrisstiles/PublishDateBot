@@ -39,14 +39,9 @@ function getDateFromHTML(html, url) {
   const urlDate = checkURL(url);
   if (urlDate && isRecent(urlDate)) return urlDate;
 
-  // Parse HTML document to search
-  // const htmlDocument = document.implementation.createHTMLDocument('parser');
-  // const article = htmlDocument.createElement('div');
-  // article.innerHTML = html;
+  // Create virtual HTML document to parse
   const dom = new JSDOM(html);
   const article = dom.window.document;
-  // console.log(html)
-  // return null;
 
   // Some websites include linked data with information about the article
   publishDate = checkLinkedData(article, url);
