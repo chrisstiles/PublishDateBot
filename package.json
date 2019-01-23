@@ -2,6 +2,9 @@
   "name": "publish-date-bot",
   "version": "1.0.0",
   "description": "Looks for outdated articles on Reddit",
+  "engines": {
+    "node": "10.15.0"
+  },
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
