@@ -1,4 +1,5 @@
+const express = require('express');
 const getPublishDate = require('./get-publish-date');
 
-const url = process.argv[2];
-getPublishDate(url);
+// const url = process.argv[2];
+// getPublishDate(url);
