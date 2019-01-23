@@ -5,9 +5,6 @@ const app = express();
 
 // Route to get date based on URL parameter for testing
 app.get('/date', (req, res) => {
-  // console.log(req.query.url)
-  // res.send('Test')
-  // res.send(req.params.url)
   const { url } = req.query;
 
   if (!url) {
