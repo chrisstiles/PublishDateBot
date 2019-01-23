@@ -15,6 +15,7 @@
   "author": "Chris Stiles",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^6.2.0",
     "express": "^4.16.4",
     "jsdom": "^13.1.0",
     "moment": "^2.24.0",

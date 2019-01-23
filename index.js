@@ -1,6 +1,6 @@
 const express = require('express');
 const getPublishDate = require('./get-publish-date');
-
+const postToReddit = require('./reddit');
 const app = express();
 
 // Route to get date based on URL parameter for testing
@@ -21,6 +21,24 @@ app.get('/date', (req, res) => {
       res.send(`<h1 style="color:red">${error}</h1>`);
     });
 });
+
+// Route to test posting to reddit
+app.post('/reddit', (req, res) => {
+  const { title } = req.query;
+  if (!title) {
+    res.send('No title parameter');
+    return;
+  }
+
+  postToReddit(title);
+  res.send('Post submitted');
+});
+
+app.get('/authorize-callback', (req, res) => {
+  console.log(req);
+  res.send('<h1>Authorize Callback</h1>');
+});
+
 
 // Serve static landing page for Chrome extension
 app.get('/', (req, res) => {
