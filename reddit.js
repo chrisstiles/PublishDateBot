@@ -1,4 +1,7 @@
-require('dotenv').config();
+
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const snoowrap = require('snoowrap');
 const clientId = process.env.REDDIT_CLIENT_ID;
