@@ -217,11 +217,11 @@ function checkMetaData(article) {
   }
 
   // Check page title
-  const title = article.querySelector('title');
-  if (title && title.innerText.match(/([^\d]*\d){8}/)) {
-    const date = getDateFromString(title.innerText);
-    if (date) return date;
-  }
+  // const title = article.querySelector('title');
+  // if (title && title.innerText.match(/([^\d]*\d){8}/)) {
+  //   const date = getDateFromString(title.innerText);
+  //   if (date) return date;
+  // }
 
   return null;
 }
@@ -264,7 +264,7 @@ function checkSelectors(article, html) {
           };
         }
 
-        dateElement.innerHTML = stripScripts(dateElement.innerHTML)
+        // dateElement.innerHTML = stripScripts(dateElement.innerHTML)
 
         const dateString = dateElement.innerText || dateElement.getAttribute('value');
         let date = getDateFromString(dateString);
@@ -276,16 +276,16 @@ function checkSelectors(article, html) {
     }
   }
 
-  function stripScripts(html) {
-    let div = document.createElement('div');
-    div.innerHTML = html;
-    let scripts = div.getElementsByTagName('script');
-    let i = scripts.length;
-    while (i--) {
-      scripts[i].parentNode.removeChild(scripts[i]);
-    }
-    return div.innerHTML;
-  }
+  // function stripScripts(html) {
+  //   let div = document.createElement('div');
+  //   div.innerHTML = html;
+  //   let scripts = div.getElementsByTagName('script');
+  //   let i = scripts.length;
+  //   while (i--) {
+  //     scripts[i].parentNode.removeChild(scripts[i]);
+  //   }
+  //   return div.innerHTML;
+  // }
 
   // Check for time elements that might be publication date
   const timeElements = article.querySelectorAll('article time[datetime], time[pubdate]');
@@ -575,20 +575,19 @@ function isRecent(date) {
 //   }
 // }
 
-// function getRelativeDate(date) {
-//   const startOfPublishDate = date.clone().startOf('d')
-//   const today = moment();
-//   const yesterday = moment().subtract(1, 'd').startOf('d');
+function getRelativeDate(date) {
+  const startOfPublishDate = date.clone().startOf('d')
+  const today = moment();
+  const yesterday = moment().subtract(1, 'd').startOf('d');
 
-//   if (date.isSameOrAfter(today, 'd')) {
-//     return 'today';
-//   } else if (date.isSame(yesterday, 'd')) {
-//     return 'yesterday';
-//   } else {
-//     return startOfPublishDate.from(today.startOf('d'));
-//   }
-// }
-
+  if (date.isSameOrAfter(today, 'd')) {
+    return 'today';
+  } else if (date.isSame(yesterday, 'd')) {
+    return 'yesterday';
+  } else {
+    return startOfPublishDate.from(today.startOf('d'));
+  }
+}
 
 
 // Find the publish date from a passed URL 
@@ -603,7 +602,8 @@ function getPublishDate(url) {
 
           const htmlDate = getDateFromHTML(html, url);
           if (htmlDate) {
-            resolve(htmlDate.format('MMMM Do, YYYY'));
+            // resolve(htmlDate.format('MMMM Do, YYYY'));
+            resolve(getRelativeDate(htmlDate));
           } else {
             reject('No date found')
           }
