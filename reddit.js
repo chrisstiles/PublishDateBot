@@ -2,6 +2,7 @@
 // Initialize 
 ///////////////////////
 
+const config = require('./bot.config');
 const getPublishDate = require('./get-publish-date');
 
 // Environment Variables
@@ -100,7 +101,7 @@ const reddit = new snoowrap({
   refreshToken
 });
 
-const subredditName = 'chriscss';
+const subredditName = 'videos';
 // TODO: Check article date based on when post was submitted
 
 function getSubmissions(name) {
@@ -126,16 +127,17 @@ function checkSubreddit(name) {
   getSubmissions(name)
     .then(submissions => {
       for (let submission of submissions) {
+        console.log(submission.media)
         // submission.reply('Test comment please ignore');
-        getPublishDate(submission.url)
-          .then(date => {
+        // getPublishDate(submission.url)
+        //   .then(date => {
             
-            // reddit.getSubmission()
+        //     // reddit.getSubmission()
 
-          })
-          .catch(error => {
-            console.log(error);
-          });
+        //   })
+        //   .catch(error => {
+        //     console.log(error);
+        //   });
 
       }
     });
@@ -155,6 +157,30 @@ function mergeListings(listing1, listing2) {
   }
 
   return submissions;
+}
+
+function shouldCheckSubmission({ url: postURL, media }) {
+  try {
+    const urlObject = new URL(postURL);
+    const { hostname: url } = urlObject;
+    const { invalidDomains, validMediaDomains } = config;
+    
+    // Do not check invalid domains
+    for (let domain of invalidDomains) {
+      if (url.includes(domain)) return false;
+    };
+
+    // Only check media links on certain domains
+    for (let domain of validMediaDomains) {
+      if (url.includes(domain)) return true;
+    };
+
+    // Check links that do not link to media
+    return !media;
+  } catch(error) {
+    console.log(`Invalid URL: ${postURL}`);
+    return false;
+  }
 }
 
 module.exports = { checkSubreddit, recordCommentedPost, filterPreviouslyCommentedPosts };
