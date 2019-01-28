@@ -600,10 +600,9 @@ function getPublishDate(url) {
         .then(html => {
           if (!html) reject('Error fetching HTML');
 
-          const htmlDate = getDateFromHTML(html, url);
-          if (htmlDate) {
-            // resolve(htmlDate.format('MMMM Do, YYYY'));
-            resolve(getRelativeDate(htmlDate));
+          const date = getDateFromHTML(html, url);
+          if (date) {
+            resolve(date);
           } else {
             reject('No date found')
           }
