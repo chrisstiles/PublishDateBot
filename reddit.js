@@ -4,6 +4,8 @@
 
 const config = require('./bot.config');
 const getPublishDate = require('./get-publish-date');
+const moment = require('moment');
+const stripIndent = require('strip-indent');
 
 // Environment Variables
 if (process.env.NODE_ENV !== 'production') {
@@ -26,21 +28,19 @@ const client = new Client({
   ssl: true,
 });
 
-function filterPreviouslyCommentedPosts(ids) {
+client.connect();
+
+function filterPreviouslyCommentedSubmissions(submissions) {
   return new Promise((resolve, reject) => {
-    if (!ids || !ids.length) {
-      reject('No post ids');
+    if (!submissions || !submissions.length) {
+      reject('No submissions');
     }
 
-    client.connect();
-
-    if (typeof ids === 'string') {
-      ids = [ids];
-    }
-
+    const ids = [];
     const params = [];
-    for (let i = 1; i <= ids.length; i++) {
-      params.push(`($${i})`);
+    for (let i = 0; i < submissions.length; i++) {
+      ids.push(submissions[i].id);
+      params.push(`($${i + 1})`);
     }
 
     const queryString = `
@@ -59,32 +59,46 @@ function filterPreviouslyCommentedPosts(ids) {
 
     client.query(query)
       .then(res => {
-        client.end();
+        // client.end((err) => {
+        //   console.log('client has disconnected')
+        //   if (err) {
+        //     console.log('error during disconnection', err.stack)
+        //   }
+        // })
 
-        const rows = res.rows.map(row => {
+        const uniqueIds = res.rows.map(row => {
           return row[0];
         });
 
-        resolve(rows);
+        const uniqueSubmissions = [];
+        submissions.forEach(submission => {
+          if (uniqueIds.includes(submission.id)) {
+            uniqueSubmissions.push(submission);
+          }
+        });
+       
+        resolve(uniqueSubmissions);
       })
       .catch(error => {
-        client.end();
+        // client.end();
         reject(error.stack);
       });
   });
 }
 
-function recordCommentedPost(id) {
-  client.connect();
+function recordCommentedSubmission(id) {
+  return new Promise((resolve, reject) => {
+    const queryString = 'INSERT into comments(post_id) values($1)';
 
-  const queryString = 'INSERT into comments(post_id) values($1)';
-
-  client.query(queryString, [id])
-    .then(res => client.end())
-    .catch(error => {
-      client.end();
-      console.error(error.stack);
-    });
+    client.query(queryString, [id])
+      .then(() => {
+        console.log('Comment recorded')
+        resolve();
+      })
+      .catch(error => {
+        reject(error.stack)
+      });
+  });
 }
 
 
@@ -101,9 +115,6 @@ const reddit = new snoowrap({
   refreshToken
 });
 
-const subredditName = 'videos';
-// TODO: Check article date based on when post was submitted
-
 function getSubmissions(name) {
   const subreddit = reddit.getSubreddit(name);
 
@@ -118,31 +129,118 @@ function getSubmissions(name) {
           .then(risingListing => {
             const submissions = mergeListings(hotListing, risingListing);
             resolve(submissions);
+          })
+          .catch(error => {
+            console.error(error);
+            resolve(null);
           });
       });
   });
 }
 
-function checkSubreddit(name) {
-  getSubmissions(name)
-    .then(submissions => {
-      for (let submission of submissions) {
-        console.log(submission.media)
-        // submission.reply('Test comment please ignore');
-        // getPublishDate(submission.url)
-        //   .then(date => {
-            
-        //     // reddit.getSubmission()
+// Checks recent postings on a specific subreddit
+// and comments if an out of date link is found
+function checkSubreddit(subreddit, daysUntilOutdated) {
+  return new Promise((resolve, reject) => {
+    getSubmissions(subreddit)
+      .then(mergedSubmissions => {
+        if (!mergedSubmissions) {
+          resolve();
+          return;
+        }
 
-        //   })
-        //   .catch(error => {
-        //     console.log(error);
-        //   });
+        filterPreviouslyCommentedSubmissions(mergedSubmissions)
+          .then(submissions => {
+            const promises = [];
 
-      }
-    });
+            for (let submission of submissions) {
+              promises.push(checkSubmission(submission, daysUntilOutdated));
+            }
+
+            Promise.all(promises)
+              .then(() => {
+                resolve();
+              });
+          })
+          .catch(error => {
+            console.error(error);
+            resolve();
+          });
+      });
+  });
 }
 
+function checkSubmission(submission, daysUntilOutdated) {
+  return new Promise((resolve, reject) => {
+    const { url, created_utc: createdUTC } = submission;
+
+    if (shouldCheckSubmission(submission)) {
+      getPublishDate(url)
+        .then(publishDate => {
+          publishDate = moment(publishDate.format('YYYY-MM-DD'));
+
+          const postDate = moment(moment.utc(createdUTC, 'X').format('YYYY-MM-DD'));
+          const outdatedDate = postDate.subtract(daysUntilOutdated, 'd');
+
+          if (publishDate.isBefore(outdatedDate, 'd')) {
+            submitComment(submission, publishDate)
+              .then(() => {
+                resolve();
+              })
+              .catch(error => {
+                console.error(error);
+                resolve();
+              });
+          } else {
+            resolve();
+          }
+
+        })
+        .catch(error => {
+          console.error(`${error}: ${url}`);
+          resolve();
+        })
+    } else {
+      resolve();
+    }
+  });
+}
+
+function submitComment(submission, date) {
+  return new Promise((resolve, reject) => {
+    const today = moment(moment().format('YYYY-MM-DD'));
+    const relativeTime = date.from(today);
+
+    const comment = `
+    **This article was originally published ${relativeTime} and may contain out of date information.**  
+
+    The original publication date was ${date.format('MMMM Do, YYYY')}.
+    &nbsp;  
+    &nbsp;  
+    ^(This bot finds outdated articles. It only checks certain subreddits, but) [^(this Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off.)
+
+    [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
+  `;
+
+    submission.reply(stripIndent(comment))
+      .then(() => {
+        recordCommentedSubmission(submission.id)
+          .then(() => {
+            resolve();
+          })
+          .catch(error => {
+            console.error(error);
+            resolve();
+          });
+      })
+      .catch(error => {
+        console.error(error);
+        resolve();
+      });
+  });
+}
+
+// Used to merge hot and rising listings without duplicate submissions
 function mergeListings(listing1, listing2) {
   const ids = [];
   const submissions = listing1.map(submission => {
@@ -151,7 +249,9 @@ function mergeListings(listing1, listing2) {
   });
   
   for (let submission of listing2) {
-    if (!ids.includes(submission.id)) {
+    const { id } = submission;
+    if (!ids.includes(id)) {
+      ids.push(id);
       submissions.push(submission);
     }
   }
@@ -183,11 +283,20 @@ function shouldCheckSubmission({ url: postURL, media }) {
   }
 }
 
-module.exports = { checkSubreddit, recordCommentedPost, filterPreviouslyCommentedPosts };
+function runBot() {
+  const { subreddits } = config;
+  const promises = [];
 
-// module.exports = title => {
-  // reddit.getSubreddit('chriscss').submitLink({
-  //   title,
-  //   url: 'https://www.christopherstiles.com'
-  // });
-// }
+  subreddits.forEach(subreddit => {
+    const { name, days } = subreddit;
+    promises.push(checkSubreddit(name, days));
+  });
+
+  Promise.all(promises)
+    .then(() => {
+      console.log('All done');
+      client.end();
+    });
+}
+
+runBot();

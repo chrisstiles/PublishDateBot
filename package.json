@@ -12,6 +12,11 @@
     "server": "nodemon index.js",
     "reddit": "reddit.js"
   },
+  "nodemonConfig": {
+    "ignore": [
+      "reddit.js"
+    ]
+  },
   "author": "Chris Stiles",
   "license": "ISC",
   "dependencies": {
@@ -21,7 +26,8 @@
     "moment": "^2.24.0",
     "node-fetch": "^2.3.0",
     "pg": "^7.8.0",
-    "snoowrap": "^1.15.2"
+    "snoowrap": "^1.15.2",
+    "strip-indent": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^1.18.9"
