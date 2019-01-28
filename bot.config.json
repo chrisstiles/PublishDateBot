@@ -1,0 +1,14 @@
+{
+  "subreddits": [
+    {
+      "name": "politics",
+      "days": 31
+    }
+  ],
+  "invalidDomains": [
+    "reddit.com", "redd.it", "imgur.com", "gfycat.com", "wikipedia.com", "twitter.com"
+  ],
+  "validMediaDomains": [
+    "youtube.com", "youtu.be", "vimeo.com"
+  ]
+}
