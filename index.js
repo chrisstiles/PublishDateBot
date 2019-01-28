@@ -1,6 +1,7 @@
 const express = require('express');
 const getPublishDate = require('./get-publish-date');
-const postToReddit = require('./reddit');
+// const postToReddit = require('./reddit');
+const { recordCommentedPost, filterPreviouslyCommentedPosts } = require('./reddit');
 const app = express();
 
 // Route to get date based on URL parameter for testing
@@ -23,15 +24,26 @@ app.get('/date', (req, res) => {
 });
 
 // Route to test posting to reddit
-app.post('/reddit', (req, res) => {
-  const { title } = req.query;
-  if (!title) {
-    res.send('No title parameter');
-    return;
-  }
+// app.post('/reddit', (req, res) => {
+//   const { title } = req.query;
+//   if (!title) {
+//     res.send('No title parameter');
+//     return;
+//   }
 
-  postToReddit(title);
-  res.send('Post submitted');
+//   postToReddit(title);
+//   res.send('Post submitted');
+// });
+
+// Route to test checking previously commented posts
+app.get('/comments', (req, res) => {
+  filterPreviouslyCommentedPosts(['123', '1234', 'abc', 'abcd', 'def', 'testing'])
+    .then(ids => {
+      res.send(`<h1>${ids.join(', ')}</h1>`);
+    })
+    .catch(error => {
+      res.send(`<h1 style="color: red">${error}</h1>`);
+    });
 });
 
 app.get('/authorize-callback', (req, res) => {

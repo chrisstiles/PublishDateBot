@@ -20,6 +20,7 @@
     "jsdom": "^13.1.0",
     "moment": "^2.24.0",
     "node-fetch": "^2.3.0",
+    "pg": "^7.8.0",
     "snoowrap": "^1.15.2"
   },
   "devDependencies": {

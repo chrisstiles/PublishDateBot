@@ -37,7 +37,7 @@ function getDateFromHTML(html, url) {
   // Attempt to get date from URL, we do this after
   // checking the HTML string because it can be inaccurate
   const urlDate = checkURL(url);
-  if (urlDate && isRecent(urlDate)) return urlDate;
+  if (urlDate && isRecent(urlDate, 3)) return urlDate;
 
   // Create virtual HTML document to parse
   const dom = new JSDOM(html);
@@ -551,12 +551,12 @@ function isToday(date) {
   return date.isValid() && date.isSame(today, 'd');
 }
 
-function isRecent(date) {
+function isRecent(date, difference = 31) {
   if (!date) return false;
   if (!moment.isMoment(date)) date = getMomentObject(date);
 
   const tomorrow = moment().add(1, 'd');
-  const lastMonth = tomorrow.clone().subtract(31, 'd');
+  const lastMonth = tomorrow.clone().subtract(difference, 'd');
 
   return date.isValid() && date.isBetween(lastMonth, tomorrow, 'd', '[]');
 }
