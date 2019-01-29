@@ -59,13 +59,6 @@ function filterPreviouslyCommentedSubmissions(submissions) {
 
     client.query(query)
       .then(res => {
-        // client.end((err) => {
-        //   console.log('client has disconnected')
-        //   if (err) {
-        //     console.log('error during disconnection', err.stack)
-        //   }
-        // })
-
         const uniqueIds = res.rows.map(row => {
           return row[0];
         });
@@ -80,7 +73,6 @@ function filterPreviouslyCommentedSubmissions(submissions) {
         resolve(uniqueSubmissions);
       })
       .catch(error => {
-        // client.end();
         reject(error.stack);
       });
   });
