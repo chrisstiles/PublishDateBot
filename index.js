@@ -1,9 +1,12 @@
 const express = require('express');
 const app = express();
+const path = require('path');
 
 // Serve static landing page for Chrome extension
+app.use(express.static('public'));
+
 app.get('/', (req, res) => {
-  res.send('<h1>Static Landing Page</h1>');
+  res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 8000;
