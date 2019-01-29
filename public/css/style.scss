@@ -7,9 +7,6 @@
 }
 
 body {
-  background: #dd5736;
-  background: linear-gradient(110deg, #f37150 0%, #b34124 100%);
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f37150', endColorstr='#b34124', GradientType=1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-overflow-scrolling: touch;
@@ -18,12 +15,18 @@ body {
 }
 
 #content-wrapper {
-  min-height:100vh;
-  width:100vw;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
   display:flex;
   justify-content:center;
   align-items:center;
   padding:40px;
+  background: #dd5736;
+  background: linear-gradient(110deg, #f37150 0%, #b34124 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f37150', endColorstr='#b34124', GradientType=1);
 }
 
 #content {
