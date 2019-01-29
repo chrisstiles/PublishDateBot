@@ -1,8 +1,8 @@
 {
   "subreddits": [
     {
-      "name": "politics",
-      "days": 14
+      "name": "news",
+      "days": 21
     }
   ],
   "invalidDomains": [
