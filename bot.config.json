@@ -1,12 +1,16 @@
 {
   "subreddits": [
     {
-      "name": "news",
-      "days": 21
+      "name": "Futurology",
+      "time": 6,
+      "units": "months",
+      "flair": "Rule 13",
+      "text": "Per rule 13 older content is allowed as long as [month, year] is included in the title."
     }
   ],
   "invalidDomains": [
-    "reddit.com", "redd.it", "imgur.com", "gfycat.com", "wikipedia.com", "twitter.com"
+    "reddit.com", "redd.it", "imgur.com", "gfycat.com", "wikipedia.com", "twitter.com", "youtube.com",
+    "youtu.be", "vimeo.com", "streamable.com"
   ],
   "validMediaDomains": [
     "youtube.com", "youtu.be", "vimeo.com"
