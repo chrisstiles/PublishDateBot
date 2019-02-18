@@ -132,7 +132,7 @@ function getSubmissions(name) {
 
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
-function checkSubreddit(subreddit, daysUntilOutdated) {
+function checkSubreddit(subreddit, timeUntilOutDated, units) {
   return new Promise((resolve, reject) => {
     getSubmissions(subreddit)
       .then(mergedSubmissions => {
@@ -146,7 +146,7 @@ function checkSubreddit(subreddit, daysUntilOutdated) {
             const promises = [];
 
             for (let submission of submissions) {
-              promises.push(checkSubmission(submission, daysUntilOutdated));
+              promises.push(checkSubmission(submission, timeUntilOutDated, units));
             }
 
             Promise.all(promises)
@@ -162,7 +162,7 @@ function checkSubreddit(subreddit, daysUntilOutdated) {
   });
 }
 
-function checkSubmission(submission, daysUntilOutdated) {
+function checkSubmission(submission, timeUntilOutDated, units) {
   return new Promise((resolve, reject) => {
     const { url, created_utc: createdUTC } = submission;
 
@@ -172,8 +172,8 @@ function checkSubmission(submission, daysUntilOutdated) {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
 
           const postDate = moment(moment.utc(createdUTC, 'X').format('YYYY-MM-DD'));
-          const outdatedDate = postDate.subtract(daysUntilOutdated, 'd');
-
+          const outdatedDate = postDate.subtract(timeUntilOutDated, units);
+          
           if (publishDate.isBefore(outdatedDate, 'd')) {
             submitComment(submission, publishDate)
               .then(() => {
@@ -189,7 +189,7 @@ function checkSubmission(submission, daysUntilOutdated) {
 
         })
         .catch(error => {
-          console.error(`${error}: ${url}`);
+          // console.error(`${error}: ${url}`);
           resolve();
         })
     } else {
@@ -270,7 +270,6 @@ function shouldCheckSubmission({ url: postURL, media }) {
     // Check links that do not link to media
     return !media;
   } catch(error) {
-    console.log(`Invalid URL: ${postURL}`);
     return false;
   }
 }
@@ -280,8 +279,11 @@ function runBot() {
   const promises = [];
 
   subreddits.forEach(subreddit => {
-    const { name, days } = subreddit;
-    promises.push(checkSubreddit(name, days));
+    const { name, time } = subreddit;
+    let { units = 'days' } = subreddit;
+    if (!['days', 'months'].includes(units)) units = 'days';
+
+    promises.push(checkSubreddit(name, time, units));
   });
 
   Promise.all(promises)
