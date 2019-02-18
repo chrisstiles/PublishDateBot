@@ -604,7 +604,7 @@ function getPublishDate(url) {
           if (date) {
             resolve(date);
           } else {
-            reject('No date found')
+            reject('No date found');
           }
         })
       .catch(error => {
