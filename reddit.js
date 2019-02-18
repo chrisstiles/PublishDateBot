@@ -88,7 +88,8 @@ function recordCommentedSubmission(id) {
         resolve();
       })
       .catch(error => {
-        reject(error.stack)
+        console.log(error.stack);
+        resolve(error.stack)
       });
   });
 }
@@ -130,39 +131,68 @@ function getSubmissions(name) {
   });
 }
 
-// Checks recent postings on a specific subreddit
-// and comments if an out of date link is found
-function checkSubreddit(subreddit, timeUntilOutDated, units) {
+// Checks if PublishDateBot is a mod of this subreddit
+// and accepts an invitation to become a mod if it exists
+function checkModStatus({ name, flair, flairId }) {
   return new Promise((resolve, reject) => {
-    getSubmissions(subreddit)
-      .then(mergedSubmissions => {
-        if (!mergedSubmissions) {
-          resolve();
-          return;
+    const subreddit = reddit.getSubreddit(name);
+
+    subreddit
+      .getModerators({ name: 'PublishDateBot' })
+      .then(users => {
+        let canModerate = !!users.length;
+        
+        if (canModerate && (flair || flairId)) {
+          const permissions = users[0]['mod_permissions'];
+          canModerate = permissions.includes('all') || permissions.includes('flair');
         }
 
-        filterPreviouslyCommentedSubmissions(mergedSubmissions)
-          .then(submissions => {
-            const promises = [];
+        resolve(canModerate);
+      })
+      .catch(error => {
+        console.log(error);
+        resolve(false);
+      })
+  });
+}
 
-            for (let submission of submissions) {
-              promises.push(checkSubmission(submission, timeUntilOutDated, units));
+// Checks recent postings on a specific subreddit
+// and comments if an out of date link is found
+function checkSubreddit(data) {
+  return new Promise((resolve, reject) => {
+    checkModStatus(data)
+      .then(canModerate => {
+        data.canModerate = canModerate;
+        getSubmissions(data.name)
+          .then(mergedSubmissions => {
+            if (!mergedSubmissions) {
+              resolve();
+              return;
             }
 
-            Promise.all(promises)
-              .then(() => {
+            filterPreviouslyCommentedSubmissions(mergedSubmissions)
+              .then(submissions => {
+                const promises = [];
+
+                for (let submission of submissions) {
+                  promises.push(checkSubmission(submission, data));
+                }
+
+                Promise.all(promises)
+                  .then(() => {
+                    resolve();
+                  });
+              })
+              .catch(error => {
+                console.error(error);
                 resolve();
               });
-          })
-          .catch(error => {
-            console.error(error);
-            resolve();
           });
       });
   });
 }
 
-function checkSubmission(submission, timeUntilOutDated, units) {
+function checkSubmission(submission, data) {
   return new Promise((resolve, reject) => {
     const { url, created_utc: createdUTC } = submission;
 
@@ -170,12 +200,12 @@ function checkSubmission(submission, timeUntilOutDated, units) {
       getPublishDate(url)
         .then(publishDate => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
-
+          const { time, units } = data;
           const postDate = moment(moment.utc(createdUTC, 'X').format('YYYY-MM-DD'));
-          const outdatedDate = postDate.subtract(timeUntilOutDated, units);
+          const outdatedDate = postDate.subtract(time, units);
           
           if (publishDate.isBefore(outdatedDate, 'd')) {
-            submitComment(submission, publishDate)
+            submitComment(submission, publishDate, data)
               .then(() => {
                 resolve();
               })
@@ -198,30 +228,34 @@ function checkSubmission(submission, timeUntilOutDated, units) {
   });
 }
 
-function submitComment(submission, date) {
+function submitComment(submission, date, data) {
   return new Promise((resolve, reject) => {
+    const { text = '' } = data;
     const today = moment(moment().format('YYYY-MM-DD'));
     const relativeTime = date.from(today);
 
-    const comment = `
-    **This article was originally published ${relativeTime} and may contain out of date information.**  
+    let comment = `
+      **This article was originally published ${relativeTime} and may contain out of date information.**  
+      
+      The original publication date was ${date.format('MMMM Do, YYYY')}. {{text}}
+      &nbsp;  
+      &nbsp;  
+      ^(This bot finds outdated articles. It only checks certain subreddits, but) [^(this Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off.)
 
-    The original publication date was ${date.format('MMMM Do, YYYY')}.
-    &nbsp;  
-    &nbsp;  
-    ^(This bot finds outdated articles. It only checks certain subreddits, but) [^(this Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off.)
+      [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
+    `;
 
-    [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
-  `;
+    comment = comment.replace('{{text}}', text);
 
     submission.reply(stripIndent(comment))
       .then(() => {
-        recordCommentedSubmission(submission.id)
+        const promises = [
+          assignFlair(submission, data),
+          recordCommentedSubmission(submission.id)
+        ];
+
+        Promise.all(promises)
           .then(() => {
-            resolve();
-          })
-          .catch(error => {
-            console.error(error);
             resolve();
           });
       })
@@ -229,6 +263,55 @@ function submitComment(submission, date) {
         console.error(error);
         resolve();
       });
+  });
+}
+
+function assignFlair(submission, data) {
+  return new Promise((resolve, reject) => {
+    const { flair, flairId, canModerate } = data;
+
+    if ((flair || flairId) && canModerate) {
+      submission
+        .getLinkFlairTemplates()
+        .then(templates => {
+          let flairTemplateId = null;
+
+          // Try to confirm 
+          for (let template of templates) {
+            const id = template['flair_template_id'];
+            const text = template['flair_text'];
+
+            if (id && text) {
+              if (flairId && id === flairId || flair.toLowerCase() === text.toLowerCase()) {
+                flairTemplateId = id;
+                break;
+              }
+            }
+          }
+
+          // Assign correct flair to post
+          if (flairTemplateId) {
+            submission
+              .selectFlair({ 'flair_template_id': flairTemplateId })
+              .then(() => {
+                resolve();
+              })
+              .catch(error => {
+                console.log(error);
+                resolve();
+              });
+          } else {
+            console.log('Correct flair not found');
+            resolve();
+          }
+        })
+        .catch(error => {
+          console.log(error);
+          resolve();
+        })
+    } else {
+      resolve();
+    }
   });
 }
 
@@ -262,10 +345,10 @@ function shouldCheckSubmission({ url: postURL, media }) {
       if (url.includes(domain)) return false;
     };
 
-    // Only check media links on certain domains
-    for (let domain of validMediaDomains) {
-      if (url.includes(domain)) return true;
-    };
+    // TODO: Add functionality to dynamically set valid media domains
+    // for (let domain of validMediaDomains) {
+    //   if (url.includes(domain)) return true;
+    // };
 
     // Check links that do not link to media
     return !media;
@@ -278,12 +361,11 @@ function runBot() {
   const { subreddits } = config;
   const promises = [];
 
-  subreddits.forEach(subreddit => {
-    const { name, time } = subreddit;
-    let { units = 'days' } = subreddit;
-    if (!['days', 'months'].includes(units)) units = 'days';
-
-    promises.push(checkSubreddit(name, time, units));
+  subreddits.forEach(data => {
+    if (!data.name || isNaN(data.time)) return;
+    if (!['days', 'months'].includes(data.units)) data.units = 'days';
+    
+    promises.push(checkSubreddit(data));
   });
 
   Promise.all(promises)
