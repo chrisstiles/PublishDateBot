@@ -268,7 +268,7 @@ function submitComment(submission, date, data) {
 
 function assignFlair(submission, data) {
   return new Promise((resolve, reject) => {
-    const { flair, flairId, canModerate } = data;
+    const { flair = '', flairId = '', canModerate } = data;
 
     if ((flair || flairId) && canModerate) {
       submission
