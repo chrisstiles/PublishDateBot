@@ -73,7 +73,7 @@ function checkHTMLString(html, url) {
   // Certain websites include JSON data for other posts
   // We don't attempt to parse the date from the HTML on these
   // sites to prevent the wrong date being found
-  const skipDomains = ['talkingpointsmemo.com'];
+  const skipDomains = ['talkingpointsmemo.com', 'thersa.org'];
   for (let domain of skipDomains) {
     if (url.includes(domain)) return null;
   }
