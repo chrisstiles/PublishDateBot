@@ -251,7 +251,8 @@ function submitComment(submission, date, data) {
       .then(() => {
         const promises = [
           assignFlair(submission, data),
-          recordCommentedSubmission(submission.id)
+          recordCommentedSubmission(submission.id),
+          sendMessage(submission, relativeTime)
         ];
 
         Promise.all(promises)
@@ -312,6 +313,28 @@ function assignFlair(submission, data) {
     } else {
       resolve();
     }
+  });
+}
+
+// Send a message to me when the bot comments on a post. This will help
+// me to check for incorrect dates and improve the bot's accuracy
+function sendMessage(submission, relativeTime) {
+  return new Promise((resolve, reject) => {
+    reddit.composeMessage({
+      to: 'cstiles',
+      subject: `Submitted comment: article published ${relativeTime}.`,
+      text: stripIndent(`
+        Submission: ${submission.permalink}
+
+        Link: ${submission.url}
+      `)
+    }).then(() => {
+      resolve();
+    })
+    .catch(error => {
+      console.log(error);
+      resolve();
+    });
   });
 }
 
