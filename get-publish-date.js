@@ -260,9 +260,7 @@ function checkSelectors(article, html) {
 
         if (dateAttribute) {
           const date = getMomentObject(dateAttribute);
-          if (date) {
-            if (date) return date;
-          };
+          if (date) return date;
         }
 
         // dateElement.innerHTML = stripScripts(dateElement.innerHTML)
