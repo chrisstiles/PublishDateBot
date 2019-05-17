@@ -62,10 +62,11 @@ const possibleKeys = [
   'datePublished', 'dateCreated', 'publishDate', 'published', 'publishedDate',
   'articleChangeDateShort', 'post_date', 'dateText', 'date', 'publishedDateISO8601'
 ];
+
 const months = [
   'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
   'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'
-]
+];
 
 function checkHTMLString(html, url) {
   if (!html) return null;
