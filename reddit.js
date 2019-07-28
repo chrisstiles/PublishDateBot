@@ -240,7 +240,7 @@ function submitComment(submission, date, data) {
       The original publication date was ${date.format('MMMM Do, YYYY')}. {{text}}
       &nbsp;  
       &nbsp;  
-      ^(This bot finds outdated articles. It only checks certain subreddits, but) [^(this Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off.)
+      ^(This bot finds outdated articles. It only checks certain subreddits, but) [^(this Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you would like this bot added to your subreddit.)
 
       [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
     `;
