@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
+const config = require('./bot.config');
 moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
@@ -28,16 +29,34 @@ function getDateFromHTML(html, url) {
 
   if (url.includes('youtube.com') || url.includes('youtu.be')) return getYoutubeDate(html);
 
+  // Some domains have incorrect dates in their
+  // URLs or LD JSON. For those we only
+  // check the page's markup for the date
+  const { htmlOnlyDomains } = config;
+  const urlObject = new URL(url);
+  const { hostname } = urlObject;
+  let isHTMLOnly = false;
+
+  if (htmlOnlyDomains && htmlOnlyDomains.length) {
+    for (let domain of htmlOnlyDomains) {
+      if (hostname.includes(domain)) isHTMLOnly = true;
+    }
+  }
+
   // Try searching from just the HTML string with regex
   // We just look for JSON as it is not accurate to parse
   // HTML with regex, but is much faster than using the DOM
-  publishDate = checkHTMLString(html, url);
-  if (publishDate) return publishDate;
+  if (!isHTMLOnly) {
+    publishDate = checkHTMLString(html, url);
+    if (publishDate) return publishDate;
+  }
 
   // Attempt to get date from URL, we do this after
   // checking the HTML string because it can be inaccurate
-  const urlDate = checkURL(url);
-  if (urlDate && isRecent(urlDate, 3)) return urlDate;
+  if (!isHTMLOnly) {
+    const urlDate = checkURL(url);
+    if (urlDate && isRecent(urlDate, 3)) return urlDate;
+  }
 
   // Create virtual HTML document to parse
   const dom = new JSDOM(html);

@@ -8,6 +8,9 @@
       "text": "Per rule 13 older content is allowed as long as [month, year] is included in the title."
     }
   ],
+  "htmlOnlyDomains": [
+    "cbc.ca"
+  ],
   "invalidDomains": [
     "reddit.com", "redd.it", "imgur.com", "gfycat.com", "wikipedia.com", "twitter.com", "youtube.com",
     "youtu.be", "vimeo.com", "streamable.com", "horizon-magazine.eu", "thersa.org"
