@@ -29,12 +29,29 @@ function getDateFromHTML(html, url) {
 
   if (url.includes('youtube.com') || url.includes('youtu.be')) return getYoutubeDate(html);
 
+  // Create virtual HTML document to parse
+  const dom = new JSDOM(html);
+  const article = dom.window.document;
+
+  const urlObject = new URL(url);
+  let { hostname } = urlObject;
+  hostname = hostname.replace(/^www./, '');
+
+  // Some websites aren't very reliable, or use 
+  // selectors that may be incorrect on other sites.
+  // To get around this we can set specific selectors
+  // the bot should check on a particular website
+  const { siteSpecificSelectors } = config;
+  const selector = siteSpecificSelectors[hostname];
+
+  if (selector) {
+    return checkSelectors(article, html, selector);
+  }
+
   // Some domains have incorrect dates in their
   // URLs or LD JSON. For those we only
   // check the page's markup for the date
   const { htmlOnlyDomains } = config;
-  const urlObject = new URL(url);
-  const { hostname } = urlObject;
   let isHTMLOnly = false;
 
   if (htmlOnlyDomains && htmlOnlyDomains.length) {
@@ -57,10 +74,6 @@ function getDateFromHTML(html, url) {
     const urlDate = checkURL(url);
     if (urlDate && isRecent(urlDate, 3)) return urlDate;
   }
-
-  // Create virtual HTML document to parse
-  const dom = new JSDOM(html);
-  const article = dom.window.document;
 
   // Some websites include linked data with information about the article
   publishDate = checkLinkedData(article, url);
@@ -246,8 +259,8 @@ function checkMetaData(article) {
   return null;
 }
 
-function checkSelectors(article, html) {
-  const possibleSelectors = [
+function checkSelectors(article, html, specificSelector = null) {
+  const possibleSelectors = specificSelector ? [specificSelector] : [
     'datePublished', 'published', 'pubdate', 'timestamp', 'post-date', 'post__date', 'article-date', 'article_date', 'publication-date',
     'Article__Date', 'pb-timestamp', 'meta', 'lastupdatedtime', 'article__meta', 'post-time', 'video-player__metric', 'article-info', 'dateInfo', 'article__date',
     'Timestamp-time', 'report-writer-date', 'publish-date', 'published_date', 'byline', 'date-display-single', 'tmt-news-meta__date', 'article-source',
@@ -257,18 +270,21 @@ function checkSelectors(article, html) {
 
   // Since we can't account for every possible selector a site will use,
   // we check the HTML for CSS classes or IDs that might contain the publish date
-  const possibleClassStrings = ['publish', 'byline'];
-  const classTest = new RegExp(`(?:(?:class|id)=")([ a-zA-Z0-9_-]*(${possibleClassStrings.join('|')})[ a-zA-Z0-9_-]*)(?:"?)`, 'gim');
 
-  let classMatch;
-  while (classMatch = classTest.exec(html)) {
-    if (!possibleSelectors.includes(classMatch[1])) {
-      possibleSelectors.push(classMatch[1]);
+  if (!specificSelector) {
+    const possibleClassStrings = ['publish', 'byline'];
+    const classTest = new RegExp(`(?:(?:class|id)=")([ a-zA-Z0-9_-]*(${possibleClassStrings.join('|')})[ a-zA-Z0-9_-]*)(?:"?)`, 'gim');
+
+    let classMatch;
+    while (classMatch = classTest.exec(html)) {
+      if (!possibleSelectors.includes(classMatch[1])) {
+        possibleSelectors.push(classMatch[1]);
+      }
     }
   }
 
   for (let selector of possibleSelectors) {
-    const selectorString = `[itemprop^="${selector}" i], [class^="${selector}" i], [id^="${selector}" i]`;
+    const selectorString = specificSelector ? specificSelector : `[itemprop^="${selector}" i], [class^="${selector}" i], [id^="${selector}" i]`;
     const elements = article.querySelectorAll(selectorString);
 
     // Loop through elements to see if one is a date
@@ -292,6 +308,10 @@ function checkSelectors(article, html) {
         if (date) return date;
       }
     }
+  }
+
+  if (specificSelector) {
+    return null;
   }
 
   // function stripScripts(html) {
@@ -450,6 +470,8 @@ function getMomentObject(dateString) {
 
   let date = moment(dateString);
   if (isValid(date)) return date;
+
+  dateString = dateString.replace(/\|/g, '').replace(/(\d+)(st|nd|rd|th)/g, '$1').trim();
 
   // Try to account for strangly formatted dates
   const timezones = ['est', 'cst', 'mst', 'pst', 'edt', 'cdt', 'mdt', 'pdt'];

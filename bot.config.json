@@ -17,5 +17,8 @@
   ],
   "validMediaDomains": [
     "youtube.com", "youtu.be", "vimeo.com"
-  ]
+  ],
+  "siteSpecificSelectors": {
+    "science20.com": "#article-info"
+  }
 }
