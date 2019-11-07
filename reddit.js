@@ -3,7 +3,7 @@
 ///////////////////////
 
 const config = require('./bot.config');
-const getPublishDate = require('./get-publish-date');
+const { getPublishDate, months } = require('./get-publish-date');
 const moment = require('moment');
 const stripIndent = require('strip-indent');
 
@@ -196,7 +196,7 @@ function checkSubmission(submission, data) {
   return new Promise((resolve, reject) => {
     const { url, created_utc: createdUTC } = submission;
 
-    if (shouldCheckSubmission(submission)) {
+    if (shouldCheckSubmission(submission, data)) {
       getPublishDate(url)
         .then(publishDate => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
@@ -357,7 +357,9 @@ function mergeListings(listing1, listing2) {
   return submissions;
 }
 
-function shouldCheckSubmission({ url: postURL, media }) {
+function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
+  if (hasApprovedTitle(title, regex)) return false;
+
   try {
     const urlObject = new URL(postURL);
     const { hostname: url } = urlObject;
@@ -378,6 +380,14 @@ function shouldCheckSubmission({ url: postURL, media }) {
   } catch(error) {
     return false;
   }
+}
+
+// Some subreddits allow older posts as long as they
+// include the date in the title in a specific format
+function hasApprovedTitle(title, regex) {
+  if (!title || !regex) return false;
+  const regexString = regex.replace('<month>', `(${months.join('|')})`)
+  return !!title.match(new RegExp(regexString, 'i'));
 }
 
 function runBot() {

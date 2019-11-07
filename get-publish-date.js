@@ -656,4 +656,4 @@ function getPublishDate(url) {
   });
 }
 
-module.exports = getPublishDate;
+module.exports = { getPublishDate, months };
