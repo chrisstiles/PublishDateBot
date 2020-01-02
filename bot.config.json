@@ -6,7 +6,7 @@
       "units": "months",
       "flair": "Rule 13",
       "text": "Per rule 13 older content is allowed as long as [month, year] is included in the title.",
-      "regex": "\\[<month> \\d{4}\\]"
+      "regex": "\\[<month>.*\\d{4}\\]"
     }
   ],
   "htmlOnlyDomains": [
