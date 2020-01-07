@@ -20,6 +20,7 @@
     "youtube.com", "youtu.be", "vimeo.com"
   ],
   "siteSpecificSelectors": {
-    "science20.com": "#article-info"
+    "science20.com": "#article-info",
+    "uanews.arizona.edu": ".authoring-info .field-type-date"
   }
 }
