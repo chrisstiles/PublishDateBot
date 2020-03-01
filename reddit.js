@@ -79,7 +79,7 @@ function filterPreviouslyCommentedSubmissions(submissions) {
 }
 
 function recordCommentedSubmission(id) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const queryString = 'INSERT into comments(post_id) values($1)';
 
     client.query(queryString, [id])
@@ -111,7 +111,7 @@ const reddit = new snoowrap({
 function getSubmissions(name) {
   const subreddit = reddit.getSubreddit(name);
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     subreddit
       .getHot({
         limit: 50
@@ -134,7 +134,7 @@ function getSubmissions(name) {
 // Checks if PublishDateBot is a mod of this subreddit
 // and accepts an invitation to become a mod if it exists
 function checkModStatus({ name, flair, flairId }) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const subreddit = reddit.getSubreddit(name);
 
     subreddit
@@ -159,7 +159,7 @@ function checkModStatus({ name, flair, flairId }) {
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
 function checkSubreddit(data) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     checkModStatus(data)
       .then(canModerate => {
         data.canModerate = canModerate;
@@ -193,19 +193,31 @@ function checkSubreddit(data) {
 }
 
 function checkSubmission(submission, data) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const { url, created_utc: createdUTC } = submission;
 
     if (shouldCheckSubmission(submission, data)) {
-      getPublishDate(url)
-        .then(publishDate => {
+      const { time, units, ignoreModified } = data;
+
+      getPublishDate(url, !ignoreModified)
+        .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
-          const { time, units } = data;
           const postDate = moment(moment.utc(createdUTC, 'X').format('YYYY-MM-DD'));
           const outdatedDate = postDate.subtract(time, units);
+
+          resolve();
           
           if (publishDate.isBefore(outdatedDate, 'd')) {
-            submitComment(submission, publishDate, data)
+            if (!ignoreModified && modifyDate) {
+              modifyDate = moment(modifyDate.format('YYYY-MM-DD'));
+
+              if (modifyDate.isAfter(outdatedDate, 'd') && modifyDate.isAfter(publishDate, 'd')) {
+                resolve();
+                return;
+              }
+            }
+
+            submitComment(submission, publishDate, modifyDate, data, url)
               .then(() => {
                 resolve();
               })
@@ -220,7 +232,7 @@ function checkSubmission(submission, data) {
         })
         .catch(error => {
           // console.error(`${error}: ${url}`);
-          resolve();
+          resolve(error);
         })
     } else {
       resolve();
@@ -228,24 +240,34 @@ function checkSubmission(submission, data) {
   });
 }
 
-function submitComment(submission, date, data) {
-  return new Promise((resolve, reject) => {
-    const { text = '' } = data;
+function submitComment(submission, publishDate, modifyDate, data, url) {
+  return new Promise(resolve => {
+    const { text = '', ignoreModified } = data;
     const today = moment(moment().format('YYYY-MM-DD'));
-    const relativeTime = date.from(today);
+    let dateText, modifyText = '';
+    let relativeTime;
+
+    if (!ignoreModified && modifyDate && modifyDate.isAfter(publishDate, 'd')) {
+      relativeTime = modifyDate.from(today);
+      dateText = `last modified ${relativeTime}`;
+      modifyText = ` and was updated on ${modifyDate.format('MMMM Do, YYYY')}`;
+    } else {
+      relativeTime = publishDate.from(today);
+      dateText = `originally published ${relativeTime}`;
+    }
 
     let comment = `
-      **This article was originally published ${relativeTime} and may contain out of date information.**  
+      **This article was ${dateText} and may contain out of date information.**  
       
-      The original publication date was ${date.format('MMMM Do, YYYY')}. {{text}}
+      The original publication date was ${publishDate.format('MMMM Do, YYYY')}${modifyText}. ${text}
       &nbsp;  
       &nbsp;  
-      ^(This bot finds outdated articles. It only checks certain subreddits, but) [^(this Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
+      ^(This bot finds outdated articles. It only checks certain subreddits, but) this [^(Chrome extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en-US) ^(will check links on all subreddits. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
 
       [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
     `;
 
-    comment = comment.replace('{{text}}', text);
+    resolve();
 
     submission.reply(stripIndent(comment))
       .then(() => {
@@ -268,7 +290,7 @@ function submitComment(submission, date, data) {
 }
 
 function assignFlair(submission, data) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const { flair = '', flairId = '', canModerate } = data;
 
     if ((flair || flairId) && canModerate) {
@@ -319,7 +341,7 @@ function assignFlair(submission, data) {
 // Send a message to me when the bot comments on a post. This will help
 // me to check for incorrect dates and improve the bot's accuracy
 function sendMessage(submission, relativeTime) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     reddit.composeMessage({
       to: 'cstiles',
       subject: `Submitted comment: article published ${relativeTime}.`,
@@ -363,17 +385,12 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   try {
     const urlObject = new URL(postURL);
     const { hostname: url } = urlObject;
-    const { invalidDomains, validMediaDomains } = config;
+    const { invalidDomains } = config;
     
     // Do not check invalid domains
     for (let domain of invalidDomains) {
       if (url.includes(domain)) return false;
-    };
-
-    // TODO: Add functionality to dynamically set valid media domains
-    // for (let domain of validMediaDomains) {
-    //   if (url.includes(domain)) return true;
-    // };
+    }
 
     // Check links that do not link to media
     return !media;
