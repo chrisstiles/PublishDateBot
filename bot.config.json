@@ -16,11 +16,9 @@
     "reddit.com", "redd.it", "imgur.com", "gfycat.com", "wikipedia.com", "twitter.com", "youtube.com",
     "youtu.be", "vimeo.com", "streamable.com", "horizon-magazine.eu", "thersa.org"
   ],
-  "validMediaDomains": [
-    "youtube.com", "youtu.be", "vimeo.com"
-  ],
   "siteSpecificSelectors": {
     "science20.com": "#article-info",
-    "uanews.arizona.edu": ".authoring-info .field-type-date"
+    "uanews.arizona.edu": ".authoring-info .field-type-date",
+    "sciencedaily.com": "#date_posted"
   }
 }
