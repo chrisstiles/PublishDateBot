@@ -1,6 +1,6 @@
 {
   "name": "publish-date-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Looks for outdated articles on Reddit",
   "engines": {
     "node": "10.15.0",
