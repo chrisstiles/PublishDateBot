@@ -204,8 +204,6 @@ function checkSubmission(submission, data) {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
           const postDate = moment(moment.utc(createdUTC, 'X').format('YYYY-MM-DD'));
           const outdatedDate = postDate.subtract(time, units);
-
-          resolve();
           
           if (publishDate.isBefore(outdatedDate, 'd')) {
             if (!ignoreModified && modifyDate) {
