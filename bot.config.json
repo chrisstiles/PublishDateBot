@@ -11,6 +11,7 @@
     {
       "name": "worldnews",
       "time": 10,
+      "text": "Per this subreddit's rules submissions should be to articles published within the last week.",
       "units": "days"
     }
   ],
