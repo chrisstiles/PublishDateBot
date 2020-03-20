@@ -641,9 +641,14 @@ function isValid(date) {
   const input = date._i;
   if (!input) return false;
 
+  if (date.isBefore(moment().subtract(10, 'y')) && !input.match(/\b\d{4}\b/)) {
+    const year = (new Date()).getFullYear();
+    date.year(year);
+  }
+
   // Check if the date is on or before tomorrow to account for time zone differences
   const tomorrow = moment().add(1, 'd');
-  const longAgo = moment().subtract(20, 'y');
+  const longAgo = moment().subtract(19, 'y');
   const inputLength = date._i.length;
   const digits = date._i.match(/\d/g);
   const digitLength = !digits ? 0 : digits.length;
