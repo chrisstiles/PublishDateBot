@@ -24,10 +24,16 @@ function getArticleHtml(url) {
     });
 }
 
+let method = null;
+
 function getDateFromHTML(html, url, checkModified) {
+  method = null;
   let date = null;
 
-  if (url.includes('youtube.com') || url.includes('youtu.be')) return getYoutubeDate(html);
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    method = 'YouTube';
+    return getYoutubeDate(html);
+  }
 
   // Create virtual HTML document to parse
   html = html.replace(/<style.*>\s?[^<]*<\/style>/g, '');
@@ -46,6 +52,7 @@ function getDateFromHTML(html, url, checkModified) {
   const selector = siteSpecificSelectors[hostname];
 
   if (selector && !checkModified) {
+    method = 'Site specific selector';
     return checkSelectors(article, html, selector);
   }
 
@@ -66,7 +73,11 @@ function getDateFromHTML(html, url, checkModified) {
   // HTML with regex, but is much faster than using the DOM
   if (!isHTMLOnly) {
     date = checkHTMLString(html, url, checkModified);
-    if (date) return date;
+
+    if (date) {
+      method = 'HTML string';
+      return date;
+    }
   }
 
   // Attempt to get date from URL, we do this after
@@ -75,20 +86,42 @@ function getDateFromHTML(html, url, checkModified) {
 
   if (!isHTMLOnly && !checkModified) {
     urlDate = checkURL(url);
-    if (urlDate && isRecent(urlDate, 3)) return urlDate;
+
+    if (urlDate && isRecent(urlDate, 3)) {
+      method = 'Recent URL date';
+      return urlDate;
+    }
   }
 
   // Some websites include linked data with information about the article
   date = checkLinkedData(article, url, checkModified);
 
+  if (date) {
+    method = 'Linked data';
+    return date;
+  }
+
   // Next try searching <meta> tags
-  if (!date) date = checkMetaData(article, checkModified);
+  date = checkMetaData(article, checkModified);
+  
+  if (date) {
+    method = 'Metadata';
+    return date;
+  }
 
   // Try checking item props and CSS selectors
-  if (!date) date = checkSelectors(article, html, null, checkModified);
+  date = checkSelectors(article, html, null, checkModified);
 
-  if (date) return date;
-  if (urlDate) return urlDate;
+  if (date) {
+    method = 'Selectors';
+    return date;
+  }
+
+  // if (date) return date;
+  if (urlDate) {
+    method = 'Older URL date';
+    return urlDate;
+  }
 
   return null;
 }
@@ -244,7 +277,7 @@ const metaAttributes = {
     'published_date', 'dc.date', 'field-name-post-date', 'posted', 'RELEASE_DATE'
   ],
   modify: [
-    'dateModified', 'dateUpdated', 'modified', 'modifyDate', 'article:modified', 'article:updated', 'updatedate', 'update-date',
+    'dateModified', 'dateUpdated', 'modified', 'modifyDate', 'article:modified', 'article:updated', 'updatedate', 'update-date', 'updatetime',
     'article:modify_time', 'article:update_time', 'Last-modified', 'last-modified', 'date_updated', 'date_modified'
   ]
 };
@@ -275,8 +308,7 @@ const selectors = {
     'content-head', 'news_date', 'tk-soleil', 'cmTimeStamp', 'meta p:first-child', 'entry__info', 'wrap-date-location', 'story .citation', 'ArticleTitle'
   ],
   modify: [
-    'dateModified', 'dateUpdated', 'updated', 'updatedate', 'modifydate', 'article-updated', 'post__updated', 'update-date',
-    'modify-date', 'update-time', 'lastupdatedtime'
+    'dateModified', 'dateUpdated', 'updated', 'updatedate', 'modifydate', 'article-updated', 'post__updated', 'update-date', 'updatetime', 'modify-date', 'update-time', 'lastupdatedtime'
   ]
 };
 
@@ -317,12 +349,20 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
 
         if (dateAttribute) {
           const date = getMomentObject(dateAttribute);
-          if (date) return date;
+
+          if (date) {
+            console.log(`dateAttribute: ${dateAttribute}`);
+            return date;
+          }
         }
 
         const dateString = dateElement.innerText || dateElement.getAttribute('value');
         let date = getDateFromString(dateString);
-        if (date) return date;
+        
+        if (date) {
+          console.log(`dateString: ${dateString}`);
+          return date;
+        }
 
         date = checkChildNodes(element);
         if (date) return date;
@@ -346,7 +386,11 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
       const dateString = attributes.map(a => element.getAttribute(a)).find(d => d) || element.innerText;
 
       let date = getDateFromString(dateString);
-      if (date) return date;
+      
+      if (date) {
+        console.log(`Time element dateString: ${dateString}`);
+        return date;
+      }
 
       date = checkChildNodes(element);
       if (date) return date;
@@ -384,7 +428,10 @@ function checkChildNodes(parent) {
     const text = children[i].textContent.trim();
     const date = getDateFromString(text);
 
-    if (date) return date;
+    if (date) {
+      console.log(`Child node text: ${text}`);
+      return date;
+    }
   }
 
   return null;
@@ -393,7 +440,15 @@ function checkChildNodes(parent) {
 function getDateFromParts(string) {
   if (!string || typeof string !== 'string') return null;
   let year, day, month;
-  const dateArray = string.replace(/[\.\/-]/g, '-').split('-');
+  const dateArray = string
+    .replace(/[\n\r]+|[\s]{2,}/g, ' ')
+    .trim()
+    .replace(/[\.\/-]/g, '-').split('-');
+
+  if (dateArray && dateArray.length > 1) {
+    dateArray[0] = dateArray[0].replace(/\S*\s/g, '');
+  }
+
   if (dateArray && dateArray.length === 3) {
     for (let datePart of dateArray) {
       if (datePart.length === 4) {
@@ -643,13 +698,13 @@ function getPublishDate(url, checkModified) {
 }
 
 if (process.argv[2]) {
-  const checkModified = process.argv[3] === 'true';
+  const checkModified = process.argv[3] !== 'false';
 
   getPublishDate(process.argv[2], checkModified)
     .then(({ publishDate, modifyDate }) => {
       publishDate = publishDate ? publishDate.format('YYYY-MM-DD') : null;
       modifyDate = modifyDate ? modifyDate.format('YYYY-MM-DD') : null;
-      console.log({ publishDate, modifyDate });
+      console.log({ publishDate, modifyDate, method });
     });
 }
 
