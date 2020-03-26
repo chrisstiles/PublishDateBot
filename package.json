@@ -11,7 +11,8 @@
     "start": "node index.js",
     "scss": "node-sass --watch public/css -o public/css",
     "server": "nodemon index.js",
-    "reddit": "reddit.js"
+    "reddit": "reddit.js",
+    "preinstall": "npx npm-force-resolutions"
   },
   "nodemonConfig": {
     "ignore": [
@@ -22,17 +23,21 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^6.2.0",
-    "express": "^4.16.4",
-    "jsdom": "^16.2.0",
+    "express": "^4.17.1",
+    "jsdom": "^16.2.1",
     "moment": "^2.24.0",
-    "node-fetch": "^2.3.0",
-    "node-sass": "^4.11.0",
-    "pg": "^7.8.0",
-    "snoowrap": "^1.15.2",
+    "node-fetch": "^2.6.0",
+    "node-sass": "^4.13.1",
+    "pg": "^7.18.2",
+    "snoowrap": "^1.21.0",
     "strip-indent": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
-    "nodemon": "^1.18.9"
+    "minimist": "^1.2.5",
+    "nodemon": "^1.19.4"
+  },
+  "resolutions": {
+    "minimist": "^1.2.5"
   }
 }
