@@ -240,12 +240,12 @@ function checkSubmission(submission, data) {
 
 function submitComment(submission, publishDate, modifyDate, data, url) {
   return new Promise(resolve => {
-    const { text = '', ignoreModified } = data;
+    const text = data.text ? ` ${data.text}` : '';
     const today = moment(moment().format('YYYY-MM-DD'));
     let dateText, modifyText = '';
     let relativeTime;
 
-    if (!ignoreModified && modifyDate && modifyDate.isAfter(publishDate, 'd')) {
+    if (!data.ignoreModified && modifyDate && modifyDate.isAfter(publishDate, 'd')) {
       relativeTime = modifyDate.from(today);
       dateText = `last modified ${relativeTime}`;
       modifyText = ` and was updated on ${modifyDate.format('MMMM Do, YYYY')}`;
@@ -257,7 +257,7 @@ function submitComment(submission, publishDate, modifyDate, data, url) {
     const comment = `
       **This article was ${dateText} and may contain out of date information.**  
       
-      The original publication date was ${publishDate.format('MMMM Do, YYYY')}${modifyText}. ${text}
+      The original publication date was ${publishDate.format('MMMM Do, YYYY')}${modifyText}.${text}
       &nbsp;  
       &nbsp;  
       ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
