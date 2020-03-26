@@ -254,7 +254,7 @@ function submitComment(submission, publishDate, modifyDate, data, url) {
       dateText = `originally published ${relativeTime}`;
     }
 
-    let comment = `
+    const comment = `
       **This article was ${dateText} and may contain out of date information.**  
       
       The original publication date was ${publishDate.format('MMMM Do, YYYY')}${modifyText}. ${text}

@@ -13,6 +13,11 @@
       "time": 10,
       "text": "As per /r/worldnews/wiki/rules submissions should be to articles published within the last week.",
       "units": "days"
+    },
+    {
+      "name": "Coronavirus",
+      "time": 3,
+      "units": "weeks"
     }
   ],
   "htmlOnlyDomains": [
