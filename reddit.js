@@ -411,7 +411,7 @@ function runBot() {
 
   subreddits.forEach(data => {
     if (!data.name || isNaN(data.time)) return;
-    if (!['days', 'months'].includes(data.units)) data.units = 'days';
+    if (!['days', 'months', 'weeks'].includes(data.units)) data.units = 'days';
     
     promises.push(checkSubreddit(data));
   });
