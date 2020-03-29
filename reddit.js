@@ -248,7 +248,7 @@ function submitComment(submission, publishDate, modifyDate, data, url) {
     if (!data.ignoreModified && modifyDate && modifyDate.isAfter(publishDate, 'd')) {
       relativeTime = modifyDate.from(today);
       dateText = `last modified ${relativeTime}`;
-      modifyText = ` and was updated on ${modifyDate.format('MMMM Do, YYYY')}`;
+      modifyText = ` and it was last updated on ${modifyDate.format('MMMM Do, YYYY')}`;
     } else {
       relativeTime = publishDate.from(today);
       dateText = `originally published ${relativeTime}`;
