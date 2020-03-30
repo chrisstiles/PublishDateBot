@@ -25,7 +25,7 @@
   ],
   "invalidDomains": [
     "reddit.com", "redd.it", "imgur.com", "gfycat.com", "wikipedia.com", "twitter.com", "youtube.com", "voanews.com",
-    "youtu.be", "vimeo.com", "streamable.com", "horizon-magazine.eu", "thersa.org", "blavity.com"
+    "youtu.be", "vimeo.com", "streamable.com", "horizon-magazine.eu", "thersa.org", "blavity.com", "alyaoum24.com"
   ],
   "siteSpecificSelectors": {
     "science20.com": "#article-info",
