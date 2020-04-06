@@ -302,7 +302,7 @@ function checkMetaData(article, checkModified) {
 const selectors = {
   publish: [
     'datePublished', 'published', 'pubdate', 'timestamp', 'post-date', 'post__date', 'article-date', 'article_date', 'publication-date',
-    'Article__Date', 'pb-timestamp', 'meta', 'article__meta', 'post-time', 'video-player__metric', 'article-info', 'dateInfo', 'article__date',
+    'Article__Date', 'pb-timestamp', 'meta', 'article__meta', 'article-meta .posted', 'post-time', 'video-player__metric', 'article-info', 'dateInfo', 'article__date', 'datetimestamp',
     'Timestamp-time', 'report-writer-date', 'publish-date', 'published_date', 'byline', 'date-display-single', 'tmt-news-meta__date', 'article-source',
     'blog-post-meta', 'timeinfo-txt', 'field-name-post-date', 'post--meta', 'article-dateline', 'storydate', 'post-box-meta-single', 'nyhedsdato', 'blog_date',
     'content-head', 'news_date', 'tk-soleil', 'cmTimeStamp', 'meta p:first-child', 'entry__info', 'wrap-date-location', 'story .citation', 'ArticleTitle'
@@ -338,7 +338,7 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
   }
 
   for (let selector of arr) {
-    const selectorString = specificSelector ? specificSelector : `[itemprop^="${selector}" i], [class^="${selector}" i], [id^="${selector}" i]`;
+    const selectorString = specificSelector ? specificSelector : `[itemprop^="${selector}" i], [class^="${selector}" i], [id^="${selector}" i], input[name^="${selector}" i]`;
     const elements = article.querySelectorAll(selectorString);
 
     // Loop through elements to see if one is a date
@@ -429,7 +429,16 @@ function checkChildNodes(parent) {
     const date = getDateFromString(text);
 
     if (date) {
-      console.log(`Child node text: ${text}`);
+      console.log(`
+        Child node:
+
+        Parent selectors:
+        ID: ${parent.id || null}, Classes: ${parent.classList}
+        
+        Child node text:
+
+        ${text}
+      `);
       return date;
     }
   }
@@ -505,7 +514,7 @@ function getDateFromString(string) {
   date = getMomentObject(getDateFromParts(string));
   if (date) return date;
 
-  const numberDateTest = /\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{1,4}/;
+  const numberDateTest = /^\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{1,4}$/;
   let dateString = string.match(numberDateTest);
   if (dateString) date = getMomentObject(dateString[0]);
   if (date) return date;
@@ -704,12 +713,16 @@ function getPublishDate(url, checkModified) {
 
 if (process.argv[2]) {
   const checkModified = process.argv[3] !== 'false';
+  console.log(process.argv[2])
 
   getPublishDate(process.argv[2], checkModified)
     .then(({ publishDate, modifyDate }) => {
       publishDate = publishDate ? publishDate.format('YYYY-MM-DD') : null;
       modifyDate = modifyDate ? modifyDate.format('YYYY-MM-DD') : null;
       console.log({ publishDate, modifyDate, method });
+    })
+    .catch(e => {
+      console.log(`Error: ${e}`);
     });
 }
 
