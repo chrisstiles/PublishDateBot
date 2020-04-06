@@ -1,0 +1,15 @@
+{
+  "publish": [
+    "datePublished",
+    "dateCreated",
+    "publishDate",
+    "published",
+    "publishedDate",
+    "articleChangeDateShort",
+    "post_date",
+    "dateText",
+    "date",
+    "publishedDateISO8601"
+  ],
+  "modify": ["dateModified", "dateUpdated", "modified", "modifyDate", "lastModified", "updated"]
+}

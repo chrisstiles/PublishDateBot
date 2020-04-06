@@ -44,7 +44,7 @@ function getDateFromHTML(html, url, checkModified) {
   let { hostname } = urlObject;
   hostname = hostname.replace(/^www./, '');
 
-  // Some websites aren't very reliable, or use 
+  // Some websites aren't very reliable, or use
   // selectors that may be incorrect on other sites.
   // To get around this we can set specific selectors
   // the bot should check on a particular website
@@ -103,7 +103,7 @@ function getDateFromHTML(html, url, checkModified) {
 
   // Next try searching <meta> tags
   date = checkMetaData(article, checkModified);
-  
+
   if (date) {
     method = 'Metadata';
     return date;
@@ -126,20 +126,8 @@ function getDateFromHTML(html, url, checkModified) {
   return null;
 }
 
-const jsonKeys = {
-  publish: [
-    'datePublished', 'dateCreated', 'publishDate', 'published', 'publishedDate',
-    'articleChangeDateShort', 'post_date', 'dateText', 'date', 'publishedDateISO8601'
-  ],
-  modify: [
-    'dateModified', 'dateUpdated', 'modified', 'modifyDate', 'lastModified', 'updated'
-  ]
-};
-
-const months = [
-  'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
-  'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'
-];
+const jsonKeys = require('./keys/jsonKeys.json');
+const months = require('./keys/months.json');
 
 function checkHTMLString(html, url, checkModified) {
   if (!html) return null;
@@ -153,9 +141,11 @@ function checkHTMLString(html, url, checkModified) {
   }
 
   const arr = checkModified ? jsonKeys.modify : jsonKeys.publish;
-  const regexString = `(?:(?:'|"|\\b)(?:${arr.join('|')})(?:'|")?: ?(?:'|"))([a-zA-Z0-9_.\\-:+, /]*)(?:'|")`;
+  const regexString = `(?:(?:'|"|\\b)(?:${arr.join(
+    '|'
+  )})(?:'|")?: ?(?:'|"))([a-zA-Z0-9_.\\-:+, /]*)(?:'|")`;
 
-  // First try with global 
+  // First try with global
   let dateTest = new RegExp(regexString, 'ig');
   let dateArray = html.match(dateTest);
 
@@ -220,7 +210,12 @@ function checkURL(url) {
 function getYoutubeDate(html) {
   if (!html) return null;
 
-  const dateTest = new RegExp(`(?:["']ytInitialData[",']][.\\s\\S]*dateText["'].*)((?:${months.join('|')}) \\d{1,2}, \\d{4})(?:['"])`, 'i');
+  const dateTest = new RegExp(
+    `(?:["']ytInitialData[",']][.\\s\\S]*dateText["'].*)((?:${months.join(
+      '|'
+    )}) \\d{1,2}, \\d{4})(?:['"])`,
+    'i'
+  );
   const dateArray = html.match(dateTest);
 
   if (dateArray && dateArray[1]) {
@@ -228,7 +223,7 @@ function getYoutubeDate(html) {
   }
 
   // Parse videos where date is like "4 hours ago"
-  const dateDifferenceTest = /(?:["']ytInitialData[",']][.\s\S]*dateText["'].*["'](?:\w+ )+) ?(\d+) ((?:second|minute|hour|day|month|year)s?) (?:ago)(?:['"])/i
+  const dateDifferenceTest = /(?:["']ytInitialData[",']][.\s\S]*dateText["'].*["'](?:\w+ )+) ?(\d+) ((?:second|minute|hour|day|month|year)s?) (?:ago)(?:['"])/i;
   const dateDifferenceArray = html.match(dateDifferenceTest);
 
   if (dateDifferenceArray && dateDifferenceArray.length >= 3) {
@@ -254,9 +249,8 @@ function checkLinkedData(article, url, checkModified) {
             if (date) return date;
           }
         }
-
       } catch (e) {
-        // The website has invalid JSON, attempt 
+        // The website has invalid JSON, attempt
         // to get the date with Regex
         let date = checkHTMLString(node.innerHTML, url, checkModified);
         if (date) return date;
@@ -267,20 +261,7 @@ function checkLinkedData(article, url, checkModified) {
   return null;
 }
 
-const metaAttributes = {
-  publish: [
-    'datePublished', 'article:published_time', 'article:published', 'pubdate', 'publishdate', 'article:post_date',
-    'timestamp', 'date', 'DC.date.issued', 'bt:pubDate', 'sailthru.date', 'meta', 'og:published_time', 'rnews:datePublished',
-    'article.published', 'published-date', 'article.created', 'date_published', 'vr:published_time', 'video:release_date',
-    'cxenseparse:recs:publishtime', 'article_date_original', 'cXenseParse:recs:publishtime',
-    'DATE_PUBLISHED', 'shareaholic:article_published_time', 'parsely-pub-date', 'twt-published-at',
-    'published_date', 'dc.date', 'field-name-post-date', 'posted', 'RELEASE_DATE'
-  ],
-  modify: [
-    'dateModified', 'dateUpdated', 'modified', 'modifyDate', 'article:modified', 'article:updated', 'updatedate', 'update-date', 'updatetime',
-    'article:modify_time', 'article:update_time', 'Last-modified', 'last-modified', 'date_updated', 'date_modified'
-  ]
-};
+const metaAttributes = require('./keys/metaAttributes.json');
 
 function checkMetaData(article, checkModified) {
   const arr = checkModified ? metaAttributes.modify : metaAttributes.publish;
@@ -288,7 +269,11 @@ function checkMetaData(article, checkModified) {
   const metaRegex = new RegExp(arr.join('|'), 'i');
 
   for (let meta of metaData) {
-    const property = meta.getAttribute('name') || meta.getAttribute('property') || meta.getAttribute('itemprop') || meta.getAttribute('http-equiv');
+    const property =
+      meta.getAttribute('name') ||
+      meta.getAttribute('property') ||
+      meta.getAttribute('itemprop') ||
+      meta.getAttribute('http-equiv');
 
     if (property && metaRegex.test(property)) {
       const date = getMomentObject(meta.getAttribute('content'));
@@ -299,22 +284,14 @@ function checkMetaData(article, checkModified) {
   return null;
 }
 
-const selectors = {
-  publish: [
-    'datePublished', 'published', 'pubdate', 'timestamp', 'post-date', 'post__date', 'article-date', 'article_date', 'publication-date',
-    'Article__Date', 'pb-timestamp', 'meta', 'article__meta', 'article-meta .posted', 'post-time', 'video-player__metric', 'article-info', 'dateInfo', 'article__date', 'datetimestamp',
-    'Timestamp-time', 'report-writer-date', 'publish-date', 'published_date', 'byline', 'date-display-single', 'tmt-news-meta__date', 'article-source',
-    'blog-post-meta', 'timeinfo-txt', 'field-name-post-date', 'post--meta', 'article-dateline', 'storydate', 'post-box-meta-single', 'nyhedsdato', 'blog_date',
-    'content-head', 'news_date', 'tk-soleil', 'cmTimeStamp', 'meta p:first-child', 'entry__info', 'wrap-date-location', 'story .citation', 'ArticleTitle'
-  ],
-  modify: [
-    'dateModified', 'dateUpdated', 'updated', 'updatedate', 'modifydate', 'article-updated', 'post__updated', 'update-date', 'updatetime', 'modify-date', 'update-time', 'lastupdatedtime'
-  ]
-};
+const selectors = require('./keys/selectors.json');
 
 function checkSelectors(article, html, specificSelector = null, checkModified) {
-  const arr = specificSelector ? [specificSelector] :
-    checkModified ? selectors.modify.slice() : selectors.publish.slice();
+  const arr = specificSelector
+    ? [specificSelector]
+    : checkModified
+    ? selectors.modify.slice()
+    : selectors.publish.slice();
 
   // Since we can't account for every possible selector a site will use,
   // we check the HTML for CSS classes or IDs that might contain the publish date
@@ -327,7 +304,10 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
       possibleClassStrings.push('publish');
     }
 
-    const classTest = new RegExp(`(?:(?:class|id)=")([ a-zA-Z0-9_-]*(${possibleClassStrings.join('|')})[ a-zA-Z0-9_-]*)(?:"?)`, 'gim');
+    const classTest = new RegExp(
+      `(?:(?:class|id)=")([ a-zA-Z0-9_-]*(${possibleClassStrings.join('|')})[ a-zA-Z0-9_-]*)(?:"?)`,
+      'gim'
+    );
 
     let classMatch;
     while ((classMatch = classTest.exec(html))) {
@@ -338,14 +318,17 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
   }
 
   for (let selector of arr) {
-    const selectorString = specificSelector ? specificSelector : `[itemprop^="${selector}" i], [class^="${selector}" i], [id^="${selector}" i], input[name^="${selector}" i]`;
+    const selectorString = specificSelector
+      ? specificSelector
+      : `[itemprop^="${selector}" i], [class^="${selector}" i], [id^="${selector}" i], input[name^="${selector}" i]`;
     const elements = article.querySelectorAll(selectorString);
 
     // Loop through elements to see if one is a date
     if (elements && elements.length) {
       for (let element of elements) {
         const dateElement = element.querySelector('time') || element;
-        const dateAttribute = dateElement.getAttribute('datetime') || dateElement.getAttribute('content');
+        const dateAttribute =
+          dateElement.getAttribute('datetime') || dateElement.getAttribute('content');
 
         if (dateAttribute) {
           const date = getMomentObject(dateAttribute);
@@ -358,7 +341,7 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
 
         const dateString = dateElement.innerText || dateElement.getAttribute('value');
         let date = getDateFromString(dateString);
-        
+
         if (date) {
           console.log(`dateString: ${dateString}`);
           return date;
@@ -375,18 +358,23 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
   }
 
   // Check for time elements that might be publication date
-  const timeSelectors = checkModified ? 'time[updatedate], time[modifydate], time[dt-updated]' : 'article time[datetime], time[pubdate]';
+  const timeSelectors = checkModified
+    ? 'time[updatedate], time[modifydate], time[dt-updated]'
+    : 'article time[datetime], time[pubdate]';
 
   // const timeString = checkModified ? 'updatedate' : 'pubdate';
   const timeElements = article.querySelectorAll(timeSelectors);
 
   if (timeElements && timeElements.length) {
     for (let element of timeElements) {
-      const attributes = checkModified ? ['updatedate', 'modifydate', 'dt-updated', 'datetime'] : ['pubdate', 'datetime'];
-      const dateString = attributes.map(a => element.getAttribute(a)).find(d => d) || element.innerText;
+      const attributes = checkModified
+        ? ['updatedate', 'modifydate', 'dt-updated', 'datetime']
+        : ['pubdate', 'datetime'];
+      const dateString =
+        attributes.map(a => element.getAttribute(a)).find(d => d) || element.innerText;
 
       let date = getDateFromString(dateString);
-      
+
       if (date) {
         console.log(`Time element dateString: ${dateString}`);
         return date;
@@ -402,10 +390,12 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
   }
 
   // If all else fails, try searching for very generic selectors.
-  // We only use this date if there is only one occurance 
+  // We only use this date if there is only one occurance
   const genericSelectors = ['.date', '#date', '.byline', '.data', '.datetime', '.submitted'];
   for (let selector of genericSelectors) {
-    const elements = article.querySelectorAll(`article ${selector}, .article ${selector}, #article ${selector}, header ${selector}, ${selector}`);
+    const elements = article.querySelectorAll(
+      `article ${selector}, .article ${selector}, #article ${selector}, header ${selector}, ${selector}`
+    );
 
     if (elements.length === 1) {
       let date = getDateFromString(elements[0].innerText);
@@ -452,7 +442,8 @@ function getDateFromParts(string) {
   const dateArray = string
     .replace(/[\n\r]+|[\s]{2,}/g, ' ')
     .trim()
-    .replace(/[\.\/-]/g, '-').split('-');
+    .replace(/[\.\/-]/g, '-')
+    .split('-');
 
   if (dateArray && dateArray.length > 1) {
     dateArray[0] = dateArray[0].replace(/\S*\s/g, '');
@@ -519,11 +510,14 @@ function getDateFromString(string) {
   if (dateString) date = getMomentObject(dateString[0]);
   if (date) return date;
 
-  dateString = string.match(/(?:published):? (.*$)/i)
+  dateString = string.match(/(?:published):? (.*$)/i);
   if (dateString) date = getMomentObject(dateString[1]);
   if (date) return date;
 
-  const stringDateTest = new RegExp(`/(${months.join('|')})\w*\b \d{1,2},? {1,2}(\d{4}|\d{2})/i`, 'i');
+  const stringDateTest = new RegExp(
+    `/(${months.join('|')})\w*\b \d{1,2},? {1,2}(\d{4}|\d{2})/i`,
+    'i'
+  );
   dateString = string.match(stringDateTest);
   if (dateString) date = getMomentObject(dateString[0]);
   if (date) return date;
@@ -553,7 +547,10 @@ function getMomentObject(dateString) {
   let date = moment(dateString);
   if (isValid(date)) return date;
 
-  dateString = dateString.replace(/\|/g, '').replace(/(\d+)(st|nd|rd|th)/g, '$1').trim();
+  dateString = dateString
+    .replace(/\|/g, '')
+    .replace(/(\d+)(st|nd|rd|th)/g, '$1')
+    .trim();
 
   // Try to account for strangly formatted dates
   const timezones = ['est', 'cst', 'mst', 'pst', 'edt', 'cdt', 'mdt', 'pdt'];
@@ -568,7 +565,7 @@ function getMomentObject(dateString) {
   for (let month of months) {
     if (dateString.toLowerCase().includes(month)) {
       const monthSearch = new RegExp(`(\\d{1,4} )?${month}`);
-      const startIndex = dateString.search(monthSearch)
+      const startIndex = dateString.search(monthSearch);
       const yearIndex = dateString.search(/\d{4}/);
       const endIndex = yearIndex === -1 ? dateString.length : yearIndex + 4;
 
@@ -626,11 +623,11 @@ function parseDigitOnlyDate(dateString) {
 
     // Some date formats include the day before the month (i.e. 25-12-2020).
     // On a digit only date we don't really have a way of knowing
-    // which is first, so all we can do is guess by checking if 
+    // which is first, so all we can do is guess by checking if
     // the first number is greater than 12 (meaning it can't be a month)
     const dayFirst = Number(dateArray[0]) > 12;
     const day = dayFirst ? dateArray[0] : dateArray[1];
-    const month = (dayFirst ? dateArray[1] : dateArray[0]);
+    const month = dayFirst ? dateArray[1] : dateArray[0];
     const year = dateArray[2];
     const date = getDateFromParts(`${month}-${day}-${year}`);
     if (date && isValid(date)) return date;
@@ -651,7 +648,7 @@ function isValid(date) {
   if (!input) return false;
 
   if (date.isBefore(moment().subtract(10, 'y')) && !input.match(/\b\d{4}\b/)) {
-    const year = (new Date()).getFullYear();
+    const year = new Date().getFullYear();
     date.year(year);
   }
 
@@ -681,7 +678,7 @@ function isRecent(date, difference = 31) {
   return date.isValid() && date.isBetween(lastMonth, tomorrow, 'd', '[]');
 }
 
-// Find the publish date from a passed URL 
+// Find the publish date from a passed URL
 function getPublishDate(url, checkModified) {
   return new Promise((resolve, reject) => {
     try {
@@ -713,7 +710,7 @@ function getPublishDate(url, checkModified) {
 
 if (process.argv[2]) {
   const checkModified = process.argv[3] !== 'false';
-  console.log(process.argv[2])
+  console.log(process.argv[2]);
 
   getPublishDate(process.argv[2], checkModified)
     .then(({ publishDate, modifyDate }) => {
