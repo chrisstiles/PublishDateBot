@@ -238,7 +238,7 @@ function checkSubmission(submission, data) {
   });
 }
 
-function submitComment(submission, publishDate, modifyDate, data, url) {
+function submitComment(submission, publishDate, modifyDate, data) {
   return new Promise(resolve => {
     const text = data.text ? ` ${data.text}` : '';
     const today = moment(moment().format('YYYY-MM-DD'));
