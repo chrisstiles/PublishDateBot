@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
-const config = require('./bot.config');
 moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
@@ -24,6 +23,8 @@ function getArticleHtml(url) {
     });
 }
 
+const sites = require('./data/sites.json');
+const htmlOnlyDomains = require('./data/htmlOnly.json');
 let method = null;
 
 function getDateFromHTML(html, url, checkModified) {
@@ -41,25 +42,49 @@ function getDateFromHTML(html, url, checkModified) {
   const article = dom.window.document;
 
   const urlObject = new URL(url);
-  let { hostname } = urlObject;
-  hostname = hostname.replace(/^www./, '');
+  const hostname = urlObject.hostname.replace(/^www./, '');
 
-  // Some websites aren't very reliable, or use
-  // selectors that may be incorrect on other sites.
-  // To get around this we can set specific selectors
-  // the bot should check on a particular website
-  const { siteSpecificSelectors } = config;
-  const selector = siteSpecificSelectors[hostname];
+  // We can add site specific methods for
+  // finding publish dates. This is helpful
+  // for websites with incorrect/inconsistent
+  // ways of displaying publish dates
+  const site = sites[hostname];
 
-  if (selector && !checkModified) {
-    method = 'Site specific selector';
-    return checkSelectors(article, html, selector);
+  if (site && !checkModified) {
+    method = 'Site specific';
+
+    // String values refer to selectors
+    if (typeof site === 'string') {
+      return checkSelectors(article, html, site);
+    }
+
+    if (typeof site === 'object' && site.key) {
+      // Some websites have different layouts for different
+      // sections of the website (i.e. /video/).
+      let { path, key, method = 'selector' } = site;
+      method = method.toLowerCase();
+
+      // If URL is on the same site, but a different path we
+      // will continue checking the data normally.
+      if (method && (!path || urlObject.pathname.match(new RegExp(path, 'i')))) {
+        if (method === 'html') {
+          return checkHTMLString(html, url, false, key);
+        }
+        
+        if (method === 'selector') {
+          return checkSelectors(article, html, key);
+        }
+        
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   // Some domains have incorrect dates in their
   // URLs or LD JSON. For those we only
   // check the page's markup for the date
-  const { htmlOnlyDomains } = config;
   let isHTMLOnly = false;
 
   if (htmlOnlyDomains && htmlOnlyDomains.length) {
@@ -126,10 +151,10 @@ function getDateFromHTML(html, url, checkModified) {
   return null;
 }
 
-const jsonKeys = require('./keys/jsonKeys.json');
-const months = require('./keys/months.json');
+const jsonKeys = require('./data/jsonKeys.json');
+const months = require('./data/months.json');
 
-function checkHTMLString(html, url, checkModified) {
+function checkHTMLString(html, url, checkModified, key) {
   if (!html) return null;
 
   // Certain websites include JSON data for other posts
@@ -140,7 +165,7 @@ function checkHTMLString(html, url, checkModified) {
     if (url.includes(domain)) return null;
   }
 
-  const arr = checkModified ? jsonKeys.modify : jsonKeys.publish;
+  const arr = key ? [key] : (checkModified ? jsonKeys.modify : jsonKeys.publish);
   const regexString = `(?:(?:'|"|\\b)(?:${arr.join(
     '|'
   )})(?:'|")?: ?(?:'|"))([a-zA-Z0-9_.\\-:+, /]*)(?:'|")`;
@@ -261,7 +286,7 @@ function checkLinkedData(article, url, checkModified) {
   return null;
 }
 
-const metaAttributes = require('./keys/metaAttributes.json');
+const metaAttributes = require('./data/metaAttributes.json');
 
 function checkMetaData(article, checkModified) {
   const arr = checkModified ? metaAttributes.modify : metaAttributes.publish;
@@ -284,7 +309,7 @@ function checkMetaData(article, checkModified) {
   return null;
 }
 
-const selectors = require('./keys/selectors.json');
+const selectors = require('./data/selectors.json');
 
 function checkSelectors(article, html, specificSelector = null, checkModified) {
   const arr = specificSelector
@@ -448,8 +473,6 @@ function getDateFromParts(string) {
   if (dateArray && dateArray.length > 1) {
     dateArray[0] = dateArray[0].replace(/\S*\s/g, '');
   }
-
-  console.log(dateArray)
 
   if (dateArray && dateArray.length === 3) {
     for (let datePart of dateArray) {

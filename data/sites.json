@@ -1,0 +1,10 @@
+{
+  "science20.com": "#article-info",
+  "uanews.arizona.edu": ".authoring-info .field-type-date",
+  "sciencedaily.com": "#date_posted",
+  "bbc.com": {
+    "path": "news/video_and_audio",
+    "method": "html",
+    "key": "last_updated\":{\"date"
+  }
+}

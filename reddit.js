@@ -377,16 +377,17 @@ function mergeListings(listing1, listing2) {
   return submissions;
 }
 
+const ignoreDomains = require('./data/ignore.json');
+
 function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   if (hasApprovedTitle(title, regex)) return false;
 
   try {
     const urlObject = new URL(postURL);
     const { hostname: url } = urlObject;
-    const { invalidDomains } = config;
     
-    // Do not check invalid domains
-    for (let domain of invalidDomains) {
+    // Do not check certain domains
+    for (let domain of ignoreDomains) {
       if (url.includes(domain)) return false;
     }
 
