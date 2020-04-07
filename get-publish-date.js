@@ -449,6 +449,8 @@ function getDateFromParts(string) {
     dateArray[0] = dateArray[0].replace(/\S*\s/g, '');
   }
 
+  console.log(dateArray)
+
   if (dateArray && dateArray.length === 3) {
     for (let datePart of dateArray) {
       if (datePart.length === 4) {
@@ -474,7 +476,7 @@ function getDateFromParts(string) {
       month = parts[0];
     } else {
       const today = moment();
-      const currentMonth = today.month();
+      const currentMonth = today.month() + 1;
       const currentDay = today.date();
 
       if (parts[0] === currentDay && parts[1] === currentMonth) {
@@ -497,7 +499,7 @@ function getDateFromParts(string) {
 
 function getDateFromString(string) {
   if (!string || !string.trim()) return null;
-  string = string.trim();
+  string = string.trim().replace(/\b\d{1,2}:\d{1,2}.*/, '').trim();
 
   let date = getMomentObject(string);
   if (date) return date;
@@ -507,6 +509,7 @@ function getDateFromString(string) {
 
   const numberDateTest = /^\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{1,4}$/;
   let dateString = string.match(numberDateTest);
+
   if (dateString) date = getMomentObject(dateString[0]);
   if (date) return date;
 
