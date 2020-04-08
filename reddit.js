@@ -350,7 +350,7 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
 
         Publish Date: ${publishDate.format('MMMM Do, YYYY')}
         
-        ModifyDate: ${modifyDate ? modifyDate.format('MMMM Do, YYYY') : 'None'}
+        Modify Date: ${modifyDate ? modifyDate.format('MMMM Do, YYYY') : 'None'}
       `)
     }).then(() => {
       resolve();
