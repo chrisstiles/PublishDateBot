@@ -345,8 +345,11 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
       subject: `Submitted comment: article published ${relativeTime}.`,
       text: stripIndent(`
         Submission: ${submission.permalink}
+
         Link: ${submission.url}
+
         Publish Date: ${publishDate.format('MMMM Do, YYYY')}
+        
         ModifyDate: ${modifyDate ? modifyDate.format('MMMM Do, YYYY') : 'None'}
       `)
     }).then(() => {
