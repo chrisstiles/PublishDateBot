@@ -1,0 +1,1400 @@
+{
+  "ac": {
+    "country": "Ascension",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ad": {
+    "country": "Andorra",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ae": {
+    "country": "United Arab Emirates",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "af": {
+    "country": "Afghanistan",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "ag": {
+    "country": "Antigua and Barbuda",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ai": {
+    "country": "Anguilla",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "al": {
+    "country": "Albania",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "am": {
+    "country": "Armenia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "an": {
+    "country": "Netherlands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ao": {
+    "country": "Angola",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ar": {
+    "country": "Argentina",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "as": {
+    "country": "American Samoa",
+    "YMD": false,
+    "DMY": false,
+    "MDY": true
+  },
+  "at": {
+    "country": "Austria",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "au": {
+    "country": "Australia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "aw": {
+    "country": "Aruba",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ax": {
+    "country": "Åland Islands",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "az": {
+    "country": "Azerbaijan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ba": {
+    "country": "Bosnia and Herzegovina",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bb": {
+    "country": "Barbados",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bd": {
+    "country": "Bangladesh",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "be": {
+    "country": "Belgium",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bf": {
+    "country": "Burkina Faso",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bg": {
+    "country": "Bulgaria",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bh": {
+    "country": "Bahrain",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bi": {
+    "country": "Burundi",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bj": {
+    "country": "Benin",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bl": {
+    "country": "Saint Barthélemy",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bm": {
+    "country": "Bermuda",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bn": {
+    "country": "Brunei",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bo": {
+    "country": "Bolivia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "br": {
+    "country": "Brazil",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bs": {
+    "country": "Bahamas",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bt": {
+    "country": "Bhutan",
+    "YMD": true,
+    "DMY": false,
+    "MDY": false
+  },
+  "bw": {
+    "country": "Botswana",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "by": {
+    "country": "Belarus",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "bz": {
+    "country": "Belize",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ca": {
+    "country": "Canada",
+    "YMD": true,
+    "DMY": true,
+    "MDY": true
+  },
+  "cc": {
+    "country": "Cocos (Keeling) Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cf": {
+    "country": "Central African Republic",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ch": {
+    "country": "Switzerland",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "ci": {
+    "country": "Ivory Coast",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ck": {
+    "country": "Cook Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cl": {
+    "country": "Chile",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cm": {
+    "country": "Cameroon",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "cn": {
+    "country": "China",
+    "YMD": true,
+    "DMY": false,
+    "MDY": true
+  },
+  "co": {
+    "country": "Colombia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cr": {
+    "country": "Costa Rica",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cu": {
+    "country": "Cuba",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "cv": {
+    "country": "Cape Verde",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cw": {
+    "country": "Curaçao",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cx": {
+    "country": "Christmas Island",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cy": {
+    "country": "Cyprus",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "cz": {
+    "country": "Czech Republic",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "de": {
+    "country": "Germany",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "dj": {
+    "country": "Djibouti",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "dk": {
+    "country": "Denmark",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "dm": {
+    "country": "Dominica",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "do": {
+    "country": "Dominican Republic",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "dz": {
+    "country": "Algeria",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ec": {
+    "country": "Ecuador",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ee": {
+    "country": "Estonia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "eg": {
+    "country": "Egypt",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "er": {
+    "country": "Eritrea",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "es": {
+    "country": "Spain",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "et": {
+    "country": "Ethiopia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "fi": {
+    "country": "Finland",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "fj": {
+    "country": "Fiji",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "fk": {
+    "country": "Falkland Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "fo": {
+    "country": "Faroe Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "fr": {
+    "country": "France",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "ga": {
+    "country": "Gabon",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gb": {
+    "country": "United Kingdom",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "gd": {
+    "country": "Grenada",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ge": {
+    "country": "Georgia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gf": {
+    "country": "French Guiana",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gg": {
+    "country": "Guernsey",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gh": {
+    "country": "Ghana",
+    "YMD": true,
+    "DMY": true,
+    "MDY": true
+  },
+  "gi": {
+    "country": "Gibraltar",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gl": {
+    "country": "Greenland",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gm": {
+    "country": "Gambia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gn": {
+    "country": "Guinea",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "gp": {
+    "country": "Guadeloupe",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gq": {
+    "country": "Equatorial Guinea",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gr": {
+    "country": "Greece",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gt": {
+    "country": "Guatemala",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gu": {
+    "country": "Guam",
+    "YMD": false,
+    "DMY": false,
+    "MDY": true
+  },
+  "gw": {
+    "country": "Guinea-Bissau",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "gy": {
+    "country": "Guyana",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "hk": {
+    "country": "Hong Kong",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "hn": {
+    "country": "Honduras",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "hr": {
+    "country": "Croatia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ht": {
+    "country": "Haiti",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "hu": {
+    "country": "Hungary",
+    "YMD": true,
+    "DMY": false,
+    "MDY": false
+  },
+  "id": {
+    "country": "Indonesia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ie": {
+    "country": "Ireland",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "il": {
+    "country": "Israel",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "im": {
+    "country": "Isle of Man",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "in": {
+    "country": "India",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "io": {
+    "country": "British Indian Ocean Territory",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "iq": {
+    "country": "Iraq",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "is": {
+    "country": "Iceland",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "it": {
+    "country": "Italy",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "je": {
+    "country": "Jersey",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "jm": {
+    "country": "Jamaica",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "jo": {
+    "country": "Jordan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "jp": {
+    "country": "Japan",
+    "YMD": true,
+    "DMY": false,
+    "MDY": true
+  },
+  "ke": {
+    "country": "Kenya",
+    "YMD": true,
+    "DMY": true,
+    "MDY": true
+  },
+  "kh": {
+    "country": "Cambodia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ki": {
+    "country": "Kiribati",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "km": {
+    "country": "Comoros",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "kn": {
+    "country": "Saint Kitts and Nevis",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "kp": {
+    "country": "North Korea",
+    "YMD": true,
+    "DMY": false,
+    "MDY": false
+  },
+  "kr": {
+    "country": "South Korea",
+    "YMD": true,
+    "DMY": false,
+    "MDY": true
+  },
+  "kw": {
+    "country": "Kuwait",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ky": {
+    "country": "Cayman Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": true
+  },
+  "kz": {
+    "country": "Kazakhstan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "lb": {
+    "country": "Lebanon",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "lc": {
+    "country": "Saint Lucia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "li": {
+    "country": "Liechtenstein",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "lk": {
+    "country": "Sri Lanka",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "lr": {
+    "country": "Liberia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ls": {
+    "country": "Lesotho",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "lt": {
+    "country": "Lithuania",
+    "YMD": true,
+    "DMY": false,
+    "MDY": false
+  },
+  "lu": {
+    "country": "Luxembourg",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "lv": {
+    "country": "Latvia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ly": {
+    "country": "Libya",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ma": {
+    "country": "Morocco",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mc": {
+    "country": "Monaco",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "md": {
+    "country": "Moldova",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "me": {
+    "country": "Montenegro",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mf": {
+    "country": "Saint Martin",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mg": {
+    "country": "Madagascar",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mh": {
+    "country": "Marshall Islands",
+    "YMD": false,
+    "DMY": false,
+    "MDY": true
+  },
+  "ml": {
+    "country": "Mali",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mm": {
+    "country": "Myanmar",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "mn": {
+    "country": "Mongolia",
+    "YMD": true,
+    "DMY": false,
+    "MDY": false
+  },
+  "mo": {
+    "country": "Macau",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "mp": {
+    "country": "Northern Mariana Islands",
+    "YMD": false,
+    "DMY": false,
+    "MDY": true
+  },
+  "mq": {
+    "country": "Martinique",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mr": {
+    "country": "Mauritania",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ms": {
+    "country": "Montserrat",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mt": {
+    "country": "Malta",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mu": {
+    "country": "Mauritius",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mv": {
+    "country": "Maldives",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "mw": {
+    "country": "Malawi",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mx": {
+    "country": "Mexico",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "my": {
+    "country": "Malaysia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "mz": {
+    "country": "Mozambique",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "na": {
+    "country": "Namibia",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "nc": {
+    "country": "New Caledonia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ne": {
+    "country": "Niger",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "nf": {
+    "country": "Norfolk Island",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ng": {
+    "country": "Nigeria",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ni": {
+    "country": "Nicaragua",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "nl": {
+    "country": "Netherlands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "no": {
+    "country": "Norway",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "np": {
+    "country": "Nepal",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "nr": {
+    "country": "Nauru",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "nu": {
+    "country": "Niue",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "nz": {
+    "country": "New Zealand",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "om": {
+    "country": "Oman",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "pa": {
+    "country": "Panama",
+    "YMD": false,
+    "DMY": true,
+    "MDY": true
+  },
+  "pe": {
+    "country": "Peru",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "pf": {
+    "country": "French Polynesia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "pg": {
+    "country": "Papua New Guinea",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ph": {
+    "country": "Philippines",
+    "YMD": false,
+    "DMY": true,
+    "MDY": true
+  },
+  "pk": {
+    "country": "Pakistan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "pl": {
+    "country": "Poland",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "pm": {
+    "country": "Saint Pierre and Miquelon",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "pn": {
+    "country": "Pitcairn Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "pr": {
+    "country": "Puerto Rico",
+    "YMD": false,
+    "DMY": true,
+    "MDY": true
+  },
+  "pt": {
+    "country": "Portugal",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "pw": {
+    "country": "Palau",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "py": {
+    "country": "Paraguay",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "qa": {
+    "country": "Qatar",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "re": {
+    "country": "Réunion",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ro": {
+    "country": "Romania",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "rs": {
+    "country": "Serbia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "rw": {
+    "country": "Rwanda",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "sa": {
+    "country": "Saudi Arabia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sb": {
+    "country": "Solomon Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sc": {
+    "country": "Seychelles",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sd": {
+    "country": "Sudan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "se": {
+    "country": "Sweden",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "sg": {
+    "country": "Singapore",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "sh": {
+    "country": "Saint Helena",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "si": {
+    "country": "Slovenia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sj": {
+    "country": "Svalbard",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sk": {
+    "country": "Slovakia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sl": {
+    "country": "Sierra Leone",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sm": {
+    "country": "San Marino",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sn": {
+    "country": "Senegal",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "so": {
+    "country": "Somalia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sr": {
+    "country": "Suriname",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ss": {
+    "country": "South Sudan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "st": {
+    "country": "São Tomé and Príncipe",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sv": {
+    "country": "El Salvador",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "sx": {
+    "country": "Sint Maarten",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tc": {
+    "country": "Turks and Caicos Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "td": {
+    "country": "Chad",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tg": {
+    "country": "Togo",
+    "YMD": false,
+    "DMY": true,
+    "MDY": true
+  },
+  "th": {
+    "country": "Thailand",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tj": {
+    "country": "Tajikistan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tk": {
+    "country": "Tokelau",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tl": {
+    "country": "East Timor",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tm": {
+    "country": "Turkmenistan",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tn": {
+    "country": "Tunisia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "to": {
+    "country": "Tonga",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tp": {
+    "country": "East Timor",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tr": {
+    "country": "Turkey",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tt": {
+    "country": "Trinidad and Tobago",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tv": {
+    "country": "Tuvalu",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "tw": {
+    "country": "Taiwan",
+    "YMD": true,
+    "DMY": false,
+    "MDY": false
+  },
+  "tz": {
+    "country": "Tanzania",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ua": {
+    "country": "Ukraine",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ug": {
+    "country": "Uganda",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "uk": {
+    "country": "United Kingdom",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "um": {
+    "country": "United States Minor Outlying Islands",
+    "YMD": false,
+    "DMY": false,
+    "MDY": true
+  },
+  "us": {
+    "country": "United States of America",
+    "YMD": true,
+    "DMY": false,
+    "MDY": true
+  },
+  "uy": {
+    "country": "Uruguay",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "uz": {
+    "country": "Uzbekistan",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "vc": {
+    "country": "Saint Vincent and the Grenadines",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "vg": {
+    "country": "British Virgin Islands",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "vi": {
+    "country": "United States Virgin Islands",
+    "YMD": false,
+    "DMY": false,
+    "MDY": true
+  },
+  "vn": {
+    "country": "Vietnam",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "vu": {
+    "country": "Vanuatu",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "wf": {
+    "country": "Wallis and Futuna",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ws": {
+    "country": "Samoa",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "ye": {
+    "country": "Yemen",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "yt": {
+    "country": "Mayotte",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "za": {
+    "country": "South Africa",
+    "YMD": true,
+    "DMY": true,
+    "MDY": false
+  },
+  "zm": {
+    "country": "Zambia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
+  "zw": {
+    "country": "Zimbabwe",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  }
+}
