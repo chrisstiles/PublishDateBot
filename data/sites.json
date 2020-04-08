@@ -6,5 +6,6 @@
     "path": "news/video_and_audio",
     "method": "html",
     "key": "last_updated\":{\"date"
-  }
+  },
+  "exit.al": ".published.updated"
 }

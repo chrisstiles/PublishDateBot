@@ -7,8 +7,20 @@ moment.suppressDeprecationWarnings = true;
 // Date Parsing
 ////////////////////////////
 
-function getArticleHtml(url) {
-  return fetch(url)
+function getArticleHtml(url, shouldSetUserAgent) {
+  const options = {
+    method: 'GET',
+    headers: {
+      'Accept': 'text/html',
+      'Content-Type': 'text/html'
+    }
+  };
+
+  if (shouldSetUserAgent) {
+    options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
+  }
+
+  return fetch(url, options)
     .then(response => {
       const { status } = response;
 
@@ -55,7 +67,7 @@ function getDateFromHTML(html, url, checkModified) {
 
     // String values refer to selectors
     if (typeof site === 'string') {
-      return checkSelectors(article, html, site);
+      return checkSelectors(article, html, site, false, url);
     }
 
     if (typeof site === 'object' && site.key) {
@@ -66,15 +78,18 @@ function getDateFromHTML(html, url, checkModified) {
 
       // If URL is on the same site, but a different path we
       // will continue checking the data normally.
-      if (method && (!path || urlObject.pathname.match(new RegExp(path, 'i')))) {
+      if (
+        method &&
+        (!path || urlObject.pathname.match(new RegExp(path, 'i')))
+      ) {
         if (method === 'html') {
           return checkHTMLString(html, url, false, key);
         }
-        
+
         if (method === 'selector') {
-          return checkSelectors(article, html, key);
+          return checkSelectors(article, html, key, false, url);
         }
-        
+
         return null;
       }
     } else {
@@ -112,7 +127,7 @@ function getDateFromHTML(html, url, checkModified) {
   if (!isHTMLOnly && !checkModified) {
     urlDate = checkURL(url);
 
-    if (urlDate && isRecent(urlDate, 3)) {
+    if (urlDate && isRecent(urlDate, 3, url)) {
       method = 'Recent URL date';
       return urlDate;
     }
@@ -127,7 +142,7 @@ function getDateFromHTML(html, url, checkModified) {
   }
 
   // Next try searching <meta> tags
-  date = checkMetaData(article, checkModified);
+  date = checkMetaData(article, checkModified, url);
 
   if (date) {
     method = 'Metadata';
@@ -135,7 +150,7 @@ function getDateFromHTML(html, url, checkModified) {
   }
 
   // Try checking item props and CSS selectors
-  date = checkSelectors(article, html, null, checkModified);
+  date = checkSelectors(article, html, null, checkModified, url);
 
   if (date) {
     method = 'Selectors';
@@ -165,7 +180,7 @@ function checkHTMLString(html, url, checkModified, key) {
     if (url.includes(domain)) return null;
   }
 
-  const arr = key ? [key] : (checkModified ? jsonKeys.modify : jsonKeys.publish);
+  const arr = key ? [key] : checkModified ? jsonKeys.modify : jsonKeys.publish;
   const regexString = `(?:(?:'|"|\\b)(?:${arr.join(
     '|'
   )})(?:'|")?: ?(?:'|"))([a-zA-Z0-9_.\\-:+, /]*)(?:'|")`;
@@ -186,10 +201,12 @@ function checkHTMLString(html, url, checkModified, key) {
     }
 
     if (dateString) {
-      dateArray = dateString.match(/(?:["'] ?: ?["'])([ :.a-zA-Z0-9_-]*)(?:["'])/);
+      dateArray = dateString.match(
+        /(?:["'] ?: ?["'])([ :.a-zA-Z0-9_-]*)(?:["'])/
+      );
 
       if (dateArray && dateArray[1]) {
-        let date = getMomentObject(dateArray[1]);
+        let date = getMomentObject(dateArray[1], url);
         if (date) return date;
       }
     }
@@ -200,7 +217,7 @@ function checkHTMLString(html, url, checkModified, key) {
   dateArray = html.match(dateTest);
 
   if (dateArray && dateArray[1]) {
-    let date = getMomentObject(dateArray[1]);
+    let date = getMomentObject(dateArray[1], url);
     if (date) return date;
   }
 
@@ -217,7 +234,7 @@ function checkURL(url) {
   let dateString = url.match(dateTest);
 
   if (dateString) {
-    let date = getMomentObject(dateString[0]);
+    let date = getMomentObject(dateString[0], url);
     if (date) return date;
   }
 
@@ -225,7 +242,7 @@ function checkURL(url) {
   dateString = url.match(singleDigitTest);
 
   if (dateString) {
-    let date = getMomentObject(dateString[0]);
+    let date = getMomentObject(dateString[0], url);
     if (date) return date;
   }
 
@@ -252,14 +269,19 @@ function getYoutubeDate(html) {
   const dateDifferenceArray = html.match(dateDifferenceTest);
 
   if (dateDifferenceArray && dateDifferenceArray.length >= 3) {
-    return getDateFromRelativeTime(dateDifferenceArray[1], dateDifferenceArray[2]);
+    return getDateFromRelativeTime(
+      dateDifferenceArray[1],
+      dateDifferenceArray[2]
+    );
   }
 
   return null;
 }
 
 function checkLinkedData(article, url, checkModified) {
-  let linkedData = article.querySelectorAll('script[type="application/ld+json"]');
+  let linkedData = article.querySelectorAll(
+    'script[type="application/ld+json"]'
+  );
   const arr = checkModified ? jsonKeys.modify : jsonKeys.publish;
 
   if (linkedData && linkedData.length) {
@@ -270,7 +292,7 @@ function checkLinkedData(article, url, checkModified) {
 
         for (let key of arr) {
           if (data[key]) {
-            let date = getMomentObject(data[key]);
+            let date = getMomentObject(data[key], url);
             if (date) return date;
           }
         }
@@ -288,7 +310,7 @@ function checkLinkedData(article, url, checkModified) {
 
 const metaAttributes = require('./data/metaAttributes.json');
 
-function checkMetaData(article, checkModified) {
+function checkMetaData(article, checkModified, url) {
   const arr = checkModified ? metaAttributes.modify : metaAttributes.publish;
   const metaData = article.querySelectorAll('meta');
   const metaRegex = new RegExp(arr.join('|'), 'i');
@@ -301,7 +323,7 @@ function checkMetaData(article, checkModified) {
       meta.getAttribute('http-equiv');
 
     if (property && metaRegex.test(property)) {
-      const date = getMomentObject(meta.getAttribute('content'));
+      const date = getMomentObject(meta.getAttribute('content'), url);
       if (date) return date;
     }
   }
@@ -311,7 +333,7 @@ function checkMetaData(article, checkModified) {
 
 const selectors = require('./data/selectors.json');
 
-function checkSelectors(article, html, specificSelector = null, checkModified) {
+function checkSelectors(article, html, specificSelector = null, checkModified, url) {
   const arr = specificSelector
     ? [specificSelector]
     : checkModified
@@ -330,7 +352,9 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
     }
 
     const classTest = new RegExp(
-      `(?:(?:class|id)=")([ a-zA-Z0-9_-]*(${possibleClassStrings.join('|')})[ a-zA-Z0-9_-]*)(?:"?)`,
+      `(?:(?:class|id)=")([ a-zA-Z0-9_-]*(${possibleClassStrings.join(
+        '|'
+      )})[ a-zA-Z0-9_-]*)(?:"?)`,
       'gim'
     );
 
@@ -350,13 +374,14 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
 
     // Loop through elements to see if one is a date
     if (elements && elements.length) {
-      for (let element of elements) {
+      for (let element of elements) {``
         const dateElement = element.querySelector('time') || element;
         const dateAttribute =
-          dateElement.getAttribute('datetime') || dateElement.getAttribute('content');
+          dateElement.getAttribute('datetime') ||
+          dateElement.getAttribute('content');
 
         if (dateAttribute) {
-          const date = getMomentObject(dateAttribute);
+          const date = getMomentObject(dateAttribute, url);
 
           if (date) {
             console.log(`dateAttribute: ${dateAttribute}`);
@@ -364,15 +389,16 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
           }
         }
 
-        const dateString = dateElement.innerText || dateElement.getAttribute('value');
-        let date = getDateFromString(dateString);
+        const dateString =
+          dateElement.innerText || dateElement.getAttribute('value');
+        let date = getDateFromString(dateString, url);
 
         if (date) {
           console.log(`dateString: ${dateString}`);
           return date;
         }
 
-        date = checkChildNodes(element);
+        date = checkChildNodes(element, url);
         if (date) return date;
       }
     }
@@ -387,7 +413,6 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
     ? 'time[updatedate], time[modifydate], time[dt-updated]'
     : 'article time[datetime], time[pubdate]';
 
-  // const timeString = checkModified ? 'updatedate' : 'pubdate';
   const timeElements = article.querySelectorAll(timeSelectors);
 
   if (timeElements && timeElements.length) {
@@ -396,9 +421,10 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
         ? ['updatedate', 'modifydate', 'dt-updated', 'datetime']
         : ['pubdate', 'datetime'];
       const dateString =
-        attributes.map(a => element.getAttribute(a)).find(d => d) || element.innerText;
+        attributes.map(a => element.getAttribute(a)).find(d => d) ||
+        element.innerText;
 
-      let date = getDateFromString(dateString);
+      let date = getDateFromString(dateString, url);
 
       if (date) {
         console.log(`Time element dateString: ${dateString}`);
@@ -416,14 +442,21 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
 
   // If all else fails, try searching for very generic selectors.
   // We only use this date if there is only one occurance
-  const genericSelectors = ['.date', '#date', '.byline', '.data', '.datetime', '.submitted'];
+  const genericSelectors = [
+    '.date',
+    '#date',
+    '.byline',
+    '.data',
+    '.datetime',
+    '.submitted'
+  ];
   for (let selector of genericSelectors) {
     const elements = article.querySelectorAll(
       `article ${selector}, .article ${selector}, #article ${selector}, header ${selector}, ${selector}`
     );
 
     if (elements.length === 1) {
-      let date = getDateFromString(elements[0].innerText);
+      let date = getDateFromString(elements[0].innerText, url);
       if (date) return date;
 
       date = checkChildNodes(elements[0]);
@@ -434,26 +467,17 @@ function checkSelectors(article, html, specificSelector = null, checkModified) {
   return null;
 }
 
-function checkChildNodes(parent) {
+function checkChildNodes(parent, url) {
   if (!parent.hasChildNodes()) return null;
 
   const children = parent.childNodes;
 
   for (let i = 0; i < children.length; i++) {
     const text = children[i].textContent.trim();
-    const date = getDateFromString(text);
+    const date = getDateFromString(text, url);
 
     if (date) {
-      console.log(`
-        Child node:
-
-        Parent selectors:
-        ID: ${parent.id || null}, Classes: ${parent.classList}
-        
-        Child node text:
-
-        ${text}
-      `);
+      console.log(`Child node: ${text}`);
       return date;
     }
   }
@@ -461,83 +485,138 @@ function checkChildNodes(parent) {
   return null;
 }
 
-function getDateFromParts(string) {
-  if (!string || typeof string !== 'string') return null;
-  let year, day, month;
-  const dateArray = string
-    .replace(/[\n\r]+|[\s]{2,}/g, ' ')
-    .trim()
-    .replace(/[\.\/-]/g, '-')
-    .split('-');
+// When a date string is something like 1/2/20, we attempt
+// to guess which number is the month and which is the day.
+// We default parsing as <month>/<day>/<year>
+const tlds = require('./data/tlds.json');
 
-  if (dateArray && dateArray.length > 1) {
-    dateArray[0] = dateArray[0].replace(/\S*\s/g, '');
+function getDateFromParts(nums = [], url) {
+  if (!nums) {
+    return null;
   }
 
-  if (dateArray && dateArray.length === 3) {
-    for (let datePart of dateArray) {
-      if (datePart.length === 4) {
-        year = datePart;
+  if (typeof nums === 'string') {
+    nums = nums
+      .replace(/[\n\r]+|[\s]{2,}/g, ' ')
+      .trim()
+      .replace(/[\.\/-]/g, '-')
+      .split('-');
+  }
+
+  if (!Array.isArray(nums)) {
+    return null;
+  }
+
+  if (nums.length > 1) {
+    nums[0] = nums[0].replace(/\S*\s/g, '');
+  }
+
+  let day, month, year;
+  let [num1, num2, num3] = nums;
+
+  if (isNaN(parseInt(num1)) || isNaN(parseInt(num2))) return null;
+
+  // Use tomorrow for dates to account for time zones
+  const tomorrow = moment().add(1, 'd');
+  const currentDay = tomorrow.date();
+  const currentYear = tomorrow.year();
+  const currentMonth = tomorrow.month() + 1;
+  const prefer = {
+    YMD: true,
+    DMY: false,
+    MDY: true
+  };
+
+  // If the URL uses a country specific TLD,
+  // we use the countries preferred format
+  if (url) {
+    const domain = new URL(url).hostname.split('.').pop();
+    if (tlds[domain]) Object.assign(prefer, tlds[domain]);
+  }
+
+  num1 = String(num1);
+  num2 = String(num2);
+
+  if (!isNaN(parseInt(num3))) {
+    num3 = String(num3).replace(/(\d{2,4})\b.*/, '$1');
+
+    if (num1.length === 4) { 
+      if (num3.length === 4) {
+        return null;
       }
-    }
 
-    if (!year) year = dateArray[dateArray.length - 1];
-
-    const parts = dateArray.reduce((filtered, part) => {
-      if (part !== year) {
-        filtered.push(Number(part));
-      }
-
-      return filtered;
-    }, []);
-
-    if (parts[0] > 12) {
-      day = parts[0];
-      month = parts[1];
-    } else if (parts[1] > 12) {
-      day = parts[1];
-      month = parts[0];
+      day = parseInt(num3);
+      month = parseInt(num2);
+      year = parseInt(num1);
     } else {
-      const today = moment();
-      const currentMonth = today.month() + 1;
-      const currentDay = today.date();
-
-      if (parts[0] === currentDay && parts[1] === currentMonth) {
-        day = parts[0];
-        month = parts[1];
-      } else if (parts[1] === currentDay && parts[0] === currentMonth) {
-        day = parts[1];
-        month = parts[0];
-      } else {
-        day = parts[0];
-        month = parts[1];
+      if (!num3.match(/^\d{2,4}$/)) {
+        return null;
       }
-    }
 
+      if (num3.length === 2) {
+        num3 = String(currentYear).substr(0, 2) + num3;
+      }
+
+      day = prefer.MDY ? parseInt(num2) : parseInt(num1);
+      month = prefer.MDY ? parseInt(num1) : parseInt(num2);
+      year = parseInt(num3);
+    }
+  } else {
+    day = prefer.MDY ? parseInt(num2) : parseInt(num1);
+    month = prefer.MDY ? parseInt(num1) : parseInt(num2);
+    num3 = String(currentYear);
+    year = parseInt(num3);
+  }
+  
+  // Month can't be greater than 12 or in the future
+  if (month > 12 || month > currentMonth) {
+    const _day = day;
+    day = month;
+    month = _day;
+  }
+
+  // Day cannot be in the future
+  if (month === currentMonth && day > currentDay && year === currentYear) {
+    if (month < currentDay && day <= currentMonth) {
+      const _day = day;
+      day = month;
+      month = _day;
+    }
+  }
+
+  if (day > 31 || month > 12 || year > currentYear) {
+    return null;
+  }
+
+  if (day && month && year) {
     return `${month}-${day}-${year}`;
   }
 
   return null;
 }
 
-function getDateFromString(string) {
+function getDateFromString(string, url) {
   if (!string || !string.trim()) return null;
-  string = string.trim().replace(/\b\d{1,2}:\d{1,2}.*/, '').trim();
+  string = string
+    .trim()
+    .replace(/\b\d{1,2}:\d{1,2}.*/, '')
+    .replace(/([-\/]\d{2,4}) .*/, '$1')
+    .trim();
 
-  let date = getMomentObject(string);
+  let date = getMomentObject(string, url);
   if (date) return date;
 
-  date = getMomentObject(getDateFromParts(string));
+  date = getMomentObject(getDateFromParts(string, url));
   if (date) return date;
 
   const numberDateTest = /^\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{1,4}$/;
   let dateString = string.match(numberDateTest);
 
-  if (dateString) date = getMomentObject(dateString[0]);
+  if (dateString) date = getMomentObject(dateString[0], url);
   if (date) return date;
 
   dateString = string.match(/(?:published):? (.*$)/i);
-  if (dateString) date = getMomentObject(dateString[1]);
+  if (dateString) date = getMomentObject(dateString[1], url);
   if (date) return date;
 
   const stringDateTest = new RegExp(
@@ -545,7 +624,7 @@ function getDateFromString(string) {
     'i'
   );
   dateString = string.match(stringDateTest);
-  if (dateString) date = getMomentObject(dateString[0]);
+  if (dateString) date = getMomentObject(dateString[0], url);
   if (date) return date;
 
   dateString = string
@@ -553,10 +632,13 @@ function getDateFromString(string) {
     .replace(/(\d{4}).*/, '$1')
     .replace(/([0-9]st|nd|th)/g, '')
     .replace(/posted:*/i, '')
-    .replace(/.*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/i, '')
+    .replace(
+      /.*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/i,
+      ''
+    )
     .trim();
 
-  date = getMomentObject(dateString);
+  date = getMomentObject(dateString, url);
   if (date) return date;
 
   return null;
@@ -566,7 +648,7 @@ function getDateFromString(string) {
 // Date Helpers
 ////////////////////////////
 
-function getMomentObject(dateString) {
+function getMomentObject(dateString, url) {
   if (!dateString) return null;
   if (dateString.length && dateString.length > 35) return null;
 
@@ -602,7 +684,7 @@ function getMomentObject(dateString) {
 
   // Some invalid date strings include the date without formatting
   let digitDate = dateString.replace(/[ \.\/-]/g, '');
-  const dateNumbers = parseDigitOnlyDate(digitDate);
+  const dateNumbers = parseDigitOnlyDate(digitDate, url);
 
   if (dateNumbers) {
     date = moment(dateNumbers);
@@ -628,10 +710,12 @@ function getDateFromRelativeTime(num, units) {
   return null;
 }
 
-function parseDigitOnlyDate(dateString) {
+function parseDigitOnlyDate(dateString, url) {
   if (!dateString) return null;
 
-  let matchedDate = dateString.replace(/\/|-\./g, '').match(/\b(\d{6}|\d{8})\b/);
+  let matchedDate = dateString
+    .replace(/\/|-\./g, '')
+    .match(/\b(\d{6}|\d{8})\b/);
 
   if (!matchedDate) {
     matchedDate = dateString.match(/\d{8}/);
@@ -645,23 +729,25 @@ function parseDigitOnlyDate(dateString) {
   dateString = matchedDate[0];
 
   if (dateString.length === 6) {
-    const dateArray = dateString.replace(/(\d{2})(\d{2})(\d{2})/, '$1-$2-$3').split('-');
+    const dateArray = dateString
+      .replace(/(\d{2})(\d{2})(\d{2})/, '$1-$2-$3')
+      .split('-');
 
-    // Some date formats include the day before the month (i.e. 25-12-2020).
-    // On a digit only date we don't really have a way of knowing
-    // which is first, so all we can do is guess by checking if
-    // the first number is greater than 12 (meaning it can't be a month)
-    const dayFirst = Number(dateArray[0]) > 12;
-    const day = dayFirst ? dateArray[0] : dateArray[1];
-    const month = dayFirst ? dateArray[1] : dateArray[0];
-    const year = dateArray[2];
-    const date = getDateFromParts(`${month}-${day}-${year}`);
+    const date = getDateFromParts(dateArray, url);
     if (date && isValid(date)) return date;
   } else {
-    let date = getDateFromParts(dateString.replace(/(\d{2})(\d{2})(\d{4})/, '$1-$2-$3'));
+    let date = getDateFromParts(
+      dateString.replace(/(\d{2})(\d{2})(\d{4})/, '$1-$2-$3'),
+      url
+    );
+
     if (date && isValid(date)) return date;
 
-    date = getDateFromParts(dateString.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+    date = getDateFromParts(
+      dateString.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
+      url
+    );
+
     if (date && isValid(date)) return date;
   }
 
@@ -694,9 +780,9 @@ function isValid(date) {
   );
 }
 
-function isRecent(date, difference = 31) {
+function isRecent(date, difference = 31, url) {
   if (!date) return false;
-  if (!moment.isMoment(date)) date = getMomentObject(date);
+  if (!moment.isMoment(date)) date = getMomentObject(date, url);
 
   const tomorrow = moment().add(1, 'd');
   const lastMonth = tomorrow.clone().subtract(difference, 'd');
@@ -704,30 +790,67 @@ function isRecent(date, difference = 31) {
   return date.isValid() && date.isBetween(lastMonth, tomorrow, 'd', '[]');
 }
 
+function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
+  return new Promise((resolve, reject) => {
+    getArticleHtml(url, shouldSetUserAgent)
+      .then(html => {
+        if (!html) reject('Error fetching HTML');
+
+        const data = {
+          publishDate: getDateFromHTML(html, url),
+          modifyDate: checkModified ? getDateFromHTML(html, url, true) : null
+        };
+
+        if (data.publishDate) {
+          resolve(data);
+        } else {
+          reject('No date found');
+        }
+      })
+  });
+}
+
 // Find the publish date from a passed URL
 function getPublishDate(url, checkModified) {
   return new Promise((resolve, reject) => {
     try {
-      const urlObject = new URL(url);
+      // const urlObject = new URL(url);
 
-      getArticleHtml(urlObject)
-        .then(html => {
-          if (!html) reject('Error fetching HTML');
-
-          const data = {
-            publishDate: getDateFromHTML(html, url),
-            modifyDate: checkModified ? getDateFromHTML(html, url, true) : null
-          };
-
-          if (data.publishDate) {
-            resolve(data);
-          } else {
-            reject('No date found');
-          }
+      fetchArticleAndParse(url, checkModified)
+        .then(data => resolve(data))
+        .catch(() => {
+          // If the first fetch fails try requesting with a user agent
+          // agent set. Somtimes websites return different HTML
+          // based on the user agent making the request
+          fetchArticleAndParse(url, checkModified, true)
+            .then(data => resolve(data))
+            .catch(() => reject('No date found'));
         })
-        .catch(error => {
-          reject(error);
-        });
+
+      // getArticleHtml(urlObject)
+      //   .then(html => {
+      //     if (!html) reject('Error fetching HTML');
+
+      //     const data = {
+      //       publishDate: getDateFromHTML(html, url),
+      //       modifyDate: checkModified ? getDateFromHTML(html, url, true) : null
+      //     };
+
+      //     if (data.publishDate) {
+      //       resolve(data);
+      //     } else {
+      //       // Try fetching with a user agent set
+      //       // getArticleHtml(urlObject, true)
+      //       //   .then(html => {
+                
+      //       //   })
+            
+      //       reject('No date found');
+      //     }
+      //   })
+      //   .catch(error => {
+      //     reject(error);
+      //   });
     } catch (error) {
       reject(`Invalid URL: ${url}`);
     }
@@ -736,7 +859,6 @@ function getPublishDate(url, checkModified) {
 
 if (process.argv[2]) {
   const checkModified = process.argv[3] !== 'false';
-  console.log(process.argv[2]);
 
   getPublishDate(process.argv[2], checkModified)
     .then(({ publishDate, modifyDate }) => {
@@ -749,4 +871,9 @@ if (process.argv[2]) {
     });
 }
 
-module.exports = { getPublishDate, months };
+module.exports = {
+  getPublishDate,
+  months,
+  getDateFromParts,
+  getDateFromString
+};
