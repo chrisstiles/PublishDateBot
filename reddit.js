@@ -339,6 +339,10 @@ function assignFlair(submission, data) {
 // Send a message to me when the bot comments on a post. This will help
 // me to check for incorrect dates and improve the bot's accuracy
 function sendMessage(submission, relativeTime, publishDate, modifyDate) {
+  const modifyText = 
+    modifyDate && modifyDate.isAfter(publishDate, 'd') ?
+    modifyDate.format('MMMM Do, YYYY') : 'None';
+
   return new Promise(resolve => {
     reddit.composeMessage({
       to: 'cstiles',
@@ -350,7 +354,7 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
 
         Publish Date: ${publishDate.format('MMMM Do, YYYY')}
         
-        Modify Date: ${modifyDate ? modifyDate.format('MMMM Do, YYYY') : 'None'}
+        Modify Date: ${modifyText}
       `)
     }).then(() => {
       resolve();
