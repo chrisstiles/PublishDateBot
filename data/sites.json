@@ -7,5 +7,9 @@
     "method": "html",
     "key": "last_updated\":{\"date"
   },
-  "exit.al": ".published.updated"
+  "exit.al": ".published.updated",
+  "strath.ac.uk": {
+    "key": ".press-line time",
+    "attribute": "innerText"
+  }
 }
