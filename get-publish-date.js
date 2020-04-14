@@ -13,8 +13,7 @@ function getArticleHtml(url, shouldSetUserAgent) {
     headers: {
       'Accept': 'text/html',
       'Content-Type': 'text/html'
-    },
-    timeout: 10000
+    }
   };
 
   if (shouldSetUserAgent) {
