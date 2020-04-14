@@ -29,7 +29,7 @@ function getArticleHtml(url, shouldSetUserAgent) {
           resolve(response.text());
         }
 
-        reject(`status code ${status}`);
+        reject(`status code ${status}, URL: ${url}`);
       })
       .catch(reject);
   });
