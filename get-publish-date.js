@@ -13,26 +13,27 @@ function getArticleHtml(url, shouldSetUserAgent) {
     headers: {
       'Accept': 'text/html',
       'Content-Type': 'text/html'
-    }
+    },
+    timeout: 10000
   };
 
   if (shouldSetUserAgent) {
     options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
   }
 
-  return fetch(url, options)
-    .then(response => {
-      const { status } = response;
+  return new Promise((resolve, reject) => {
+    fetch(url, options)
+      .then(response => {
+        const { status } = response;
 
-      if (status === 200) {
-        return response.text();
-      }
+        if (status === 200) {
+          resolve(response.text());
+        }
 
-      throw `Error: ${status}`;
-    })
-    .catch(error => {
-      throw error;
-    });
+        reject(`status code ${status}`);
+      })
+      .catch(reject);
+  });
 }
 
 const sites = require('./data/sites.json');
@@ -378,7 +379,7 @@ function checkSelectors(article, html, site, checkModified, url) {
     // Loop through elements to see if one is a date
     if (elements && elements.length) {
       for (let element of elements) {
-        if (typeof site === 'object' && site.attribute) {
+        if (site && typeof site === 'object' && site.attribute) {
           console.log(`Specific Attribute: ${site.attribute}`);
           const value = site.attribute === 'innerText' ? innerText(element) : element[site.attribute];
           return getMomentObject(value, url);
@@ -387,13 +388,13 @@ function checkSelectors(article, html, site, checkModified, url) {
         const dateElement = element.querySelector('time') || element;
         const dateAttribute =
           dateElement.getAttribute('datetime') ||
-          dateElement.getAttribute('content');
+          dateElement.getAttribute('content') ||
+          dateElement.getAttribute('datePublished');
 
         if (dateAttribute) {
           const date = getMomentObject(dateAttribute, url);
 
           if (date) {
-            console.log(`dateAttribute: ${dateAttribute}`);
             return date;
           }
         }
@@ -605,13 +606,16 @@ function getDateFromParts(nums = [], url) {
 
 function getDateFromString(string, url) {
   if (!string || !string.trim()) return null;
+  string = string.trim();
+  let date = getMomentObject(string, url);
+  if (date) return date;
+
   string = string
-    .trim()
     .replace(/\b\d{1,2}:\d{1,2}.*/, '')
     .replace(/([-\/]\d{2,4}) .*/, '$1')
     .trim();
 
-  let date = getMomentObject(string, url);
+  date = getMomentObject(string, url);
   if (date) return date;
 
   date = getMomentObject(getDateFromParts(string, url));
@@ -815,6 +819,9 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
           reject('No date found');
         }
       })
+      .catch(error => {
+        console.log(`Error: ${error}`);
+      });
   });
 }
 
@@ -869,7 +876,7 @@ function getPublishDate(url, checkModified) {
 function innerText(el) {
   el = el.cloneNode(true);
   el.querySelectorAll('script, style').forEach(s => s.remove());
-  return el.textContent.replace(/\n\s*\n/g, '\n').replace(/  +/g, '');
+  return el.textContent.replace(/\n\s*\n/g, '\n').replace(/  +/g, '').trim();
 }
 
 if (process.argv[2]) {
