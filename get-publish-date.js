@@ -1,24 +1,22 @@
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
+const DateParser = require('./date-parser');
 moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
 // Date Parsing
 ////////////////////////////
 
-function getArticleHtml(url, shouldSetUserAgent) {
+function getArticleHtml(url) {
   const options = {
     method: 'GET',
     headers: {
       'Accept': 'text/html',
-      'Content-Type': 'text/html'
+      'Content-Type': 'text/html',
+      'User-Agent': 'Mozilla/5.0'
     }
   };
-
-  if (shouldSetUserAgent) {
-    options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
-  }
 
   return new Promise((resolve, reject) => {
     fetch(url, options)
@@ -27,9 +25,9 @@ function getArticleHtml(url, shouldSetUserAgent) {
 
         if (status === 200) {
           resolve(response.text());
+        } else {
+          reject(`status code ${status}, URL: ${url}`);
         }
-
-        reject(`status code ${status}, URL: ${url}`);
       })
       .catch(reject);
   });
@@ -801,9 +799,9 @@ function isRecent(date, difference = 31, url) {
   return date.isValid() && date.isBetween(lastMonth, tomorrow, 'd', '[]');
 }
 
-function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
+function fetchArticleAndParse(url, checkModified) {
   return new Promise((resolve, reject) => {
-    getArticleHtml(url, shouldSetUserAgent)
+    getArticleHtml(url)
       .then(html => {
         if (!html) reject('Error fetching HTML');
 
@@ -818,9 +816,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
           reject('No date found');
         }
       })
-      .catch(error => {
-        console.log(`Error: ${error}`);
-      });
+      .catch(reject);
   });
 }
 
@@ -828,43 +824,11 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
 function getPublishDate(url, checkModified) {
   return new Promise((resolve, reject) => {
     try {
-      // const urlObject = new URL(url);
+      url = encodeURI(url);
 
       fetchArticleAndParse(url, checkModified)
         .then(data => resolve(data))
-        .catch(() => {
-          // If the first fetch fails try requesting with a user agent
-          // agent set. Somtimes websites return different HTML
-          // based on the user agent making the request
-          fetchArticleAndParse(url, checkModified, true)
-            .then(data => resolve(data))
-            .catch(() => reject('No date found'));
-        })
-
-      // getArticleHtml(urlObject)
-      //   .then(html => {
-      //     if (!html) reject('Error fetching HTML');
-
-      //     const data = {
-      //       publishDate: getDateFromHTML(html, url),
-      //       modifyDate: checkModified ? getDateFromHTML(html, url, true) : null
-      //     };
-
-      //     if (data.publishDate) {
-      //       resolve(data);
-      //     } else {
-      //       // Try fetching with a user agent set
-      //       // getArticleHtml(urlObject, true)
-      //       //   .then(html => {
-                
-      //       //   })
-            
-      //       reject('No date found');
-      //     }
-      //   })
-      //   .catch(error => {
-      //     reject(error);
-      //   });
+        .catch(reject);
     } catch (error) {
       reject(`Invalid URL: ${url}`);
     }
@@ -880,6 +844,26 @@ function innerText(el) {
 
 if (process.argv[2]) {
   const checkModified = process.argv[3] !== 'false';
+  
+  // (async () => {
+  //   const url = process.argv[2];
+  //   const parser = await new DateParser(url, checkModified).launch();
+  //   const html = await parser.getDate();
+    
+  //   const data = {
+  //     publishDate: getDateFromHTML(html, url),
+  //     modifyDate: checkModified ? getDateFromHTML(html, url, checkModified) : null
+  //   };
+
+  //   console.log({
+  //     publishDate: data.publishDate ? data.publishDate.format('YYYY-MM-DD') : null,
+  //     modifyDate: data.modifyDate ? data.modifyDate.format('YYYY-MM-DD') : null
+  //   })
+
+  //   // console.log(data);
+
+  //   parser.close();
+  // })();
 
   getPublishDate(process.argv[2], checkModified)
     .then(({ publishDate, modifyDate }) => {

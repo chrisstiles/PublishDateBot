@@ -29,6 +29,7 @@
     "node-fetch": "^2.6.0",
     "node-sass": "^4.13.1",
     "pg": "^7.18.2",
+    "puppeteer": "^2.1.1",
     "snoowrap": "^1.21.0",
     "strip-indent": "^2.0.0"
   },

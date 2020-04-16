@@ -206,23 +206,29 @@ function checkSubmission(submission, data) {
           const outdatedDate = postDate.subtract(time, units);
           
           if (publishDate.isBefore(outdatedDate, 'd')) {
-            if (!ignoreModified && modifyDate) {
-              modifyDate = moment(modifyDate.format('YYYY-MM-DD'));
+            console.log('SHOULD COMMENT:');
+            console.log(`Date: ${publishDate}`)
+            console.log(`URL: ${url}`);
+            resolve();
+            return;
 
-              if (modifyDate.isAfter(outdatedDate, 'd') && modifyDate.isAfter(publishDate, 'd')) {
-                resolve();
-                return;
-              }
-            }
+            // if (!ignoreModified && modifyDate) {
+            //   modifyDate = moment(modifyDate.format('YYYY-MM-DD'));
 
-            submitComment(submission, publishDate, modifyDate, data, url)
-              .then(() => {
-                resolve();
-              })
-              .catch(error => {
-                console.error(error);
-                resolve();
-              });
+            //   if (modifyDate.isAfter(outdatedDate, 'd') && modifyDate.isAfter(publishDate, 'd')) {
+            //     resolve();
+            //     return;
+            //   }
+            // }
+
+            // submitComment(submission, publishDate, modifyDate, data, url)
+            //   .then(() => {
+            //     resolve();
+            //   })
+            //   .catch(error => {
+            //     console.error(error);
+            //     resolve();
+            //   });
           } else {
             resolve();
           }
