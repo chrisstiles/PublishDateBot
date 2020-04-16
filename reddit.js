@@ -159,7 +159,7 @@ function checkModStatus({ name, flair, flairId }) {
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
 function checkSubreddit(data) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     checkModStatus(data)
       .then(canModerate => {
         data.canModerate = canModerate;
@@ -178,22 +178,19 @@ function checkSubreddit(data) {
                   promises.push(checkSubmission(submission, data));
                 }
 
-                Promise.all(promises)
+                Promise.allSettled(promises)
                   .then(() => {
                     resolve();
                   });
               })
-              .catch(error => {
-                console.error(error);
-                resolve();
-              });
+              .catch(reject);
           });
       });
   });
 }
 
 function checkSubmission(submission, data) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const { url, created_utc: createdUTC } = submission;
 
     if (shouldCheckSubmission(submission, data)) {
@@ -232,12 +229,8 @@ function checkSubmission(submission, data) {
           } else {
             resolve();
           }
-
         })
-        .catch(error => {
-          // console.error(`${error}: ${url}`);
-          resolve(error);
-        })
+        .catch(reject)
     } else {
       resolve();
     }
@@ -281,7 +274,7 @@ function submitComment(submission, publishDate, modifyDate, data) {
           sendMessage(submission, relativeTime, publishDate, modifyDate)
         ];
 
-        Promise.all(promises)
+        Promise.allSettled(promises)
           .then(() => {
             resolve();
           });
@@ -431,7 +424,7 @@ function runBot() {
     promises.push(checkSubreddit(data));
   });
 
-  Promise.all(promises)
+  Promise.allSettled(promises)
     .then(() => {
       console.log('All done');
       client.end();

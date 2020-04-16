@@ -25,8 +25,7 @@ function getArticleHtml(url) {
 
         if (status === 200) {
           resolve(response.text());
-        } else {
-          reject(`status code ${status}, URL: ${url}`);
+          return;
         }
       })
       .catch(reject);
