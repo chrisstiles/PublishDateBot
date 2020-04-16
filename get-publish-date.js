@@ -27,6 +27,7 @@ function getArticleHtml(url, shouldSetUserAgent) {
 
         if (status === 200) {
           resolve(response.text());
+          return;
         }
 
         reject(`status code ${status}, URL: ${url}`);
@@ -818,9 +819,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
           reject('No date found');
         }
       })
-      .catch(error => {
-        console.log(`Error: ${error}`);
-      });
+      .catch(reject);
   });
 }
 
