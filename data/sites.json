@@ -11,5 +11,9 @@
   "strath.ac.uk": {
     "key": ".press-line time",
     "attribute": "innerText"
+  },
+  "sciencedirect.com": {
+    "key": ["article", "dates", "Available online"],
+    "method": "linkedData"
   }
 }
