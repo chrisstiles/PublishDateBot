@@ -11,5 +11,6 @@
   "strath.ac.uk": {
     "key": ".press-line time",
     "attribute": "innerText"
-  }
+  },
+  "deutschlandfunk.de": ".articlehead time"
 }
