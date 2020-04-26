@@ -15,5 +15,6 @@
   "sciencedirect.com": {
     "key": ["article", "dates", "Available online"],
     "method": "linkedData"
-  }
+  },
+  "deutschlandfunk.de": ".articlehead time"
 }
