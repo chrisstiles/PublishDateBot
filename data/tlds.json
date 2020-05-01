@@ -1067,6 +1067,12 @@
     "DMY": true,
     "MDY": false
   },
+  "ru": {
+    "country": "Russia",
+    "YMD": false,
+    "DMY": true,
+    "MDY": false
+  },
   "rw": {
     "country": "Rwanda",
     "YMD": true,
