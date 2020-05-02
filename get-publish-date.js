@@ -1,7 +1,11 @@
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
+<<<<<<< HEAD
 const DateParser = require('./date-parser');
+=======
+const _ = require('lodash');
+>>>>>>> master
 moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
@@ -71,7 +75,6 @@ function getDateFromHTML(html, url, checkModified) {
       // Some websites have different layouts for different
       // sections of the website (i.e. /video/).
       let { path, key, method = 'selector' } = site;
-      method = method.toLowerCase();
 
       // If URL is on the same site, but a different path we
       // will continue checking the data normally.
@@ -85,6 +88,10 @@ function getDateFromHTML(html, url, checkModified) {
 
         if (method === 'selector') {
           return checkSelectors(article, html, site, false, url);
+        }
+
+        if (method === 'linkedData') {
+          return checkLinkedData(article, html, false, key)
         }
 
         return null;
@@ -275,9 +282,9 @@ function getYoutubeDate(html) {
   return null;
 }
 
-function checkLinkedData(article, url, checkModified) {
+function checkLinkedData(article, url, checkModified, specificKey) {
   let linkedData = article.querySelectorAll(
-    'script[type="application/ld+json"]'
+    'script[type="application/ld+json"], script[type="application/json"]'
   );
   const arr = checkModified ? jsonKeys.modify : jsonKeys.publish;
 
@@ -286,6 +293,10 @@ function checkLinkedData(article, url, checkModified) {
     for (let node of linkedData) {
       try {
         let data = JSON.parse(node.innerHTML);
+
+        if (specificKey) {
+          return getMomentObject(_.get(data, specificKey), url);
+        }
 
         for (let key of arr) {
           if (data[key]) {
