@@ -1,11 +1,8 @@
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
-<<<<<<< HEAD
 const DateParser = require('./date-parser');
-=======
 const _ = require('lodash');
->>>>>>> master
 moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
@@ -16,7 +13,7 @@ function getArticleHtml(url) {
   const options = {
     method: 'GET',
     headers: {
-      'Accept': 'text/html',
+      Accept: 'text/html',
       'Content-Type': 'text/html',
       'User-Agent': 'Mozilla/5.0'
     }
@@ -91,7 +88,7 @@ function getDateFromHTML(html, url, checkModified) {
         }
 
         if (method === 'linkedData') {
-          return checkLinkedData(article, html, false, key)
+          return checkLinkedData(article, html, false, key);
         }
 
         return null;
@@ -342,8 +339,12 @@ function checkMetaData(article, checkModified, url) {
 const selectors = require('./data/selectors.json');
 
 function checkSelectors(article, html, site, checkModified, url) {
-  const specificSelector = !checkModified && site ? 
-    (typeof site === 'string' ? site : site.key) : null;
+  const specificSelector =
+    !checkModified && site
+      ? typeof site === 'string'
+        ? site
+        : site.key
+      : null;
 
   const arr = specificSelector
     ? [specificSelector]
@@ -388,7 +389,10 @@ function checkSelectors(article, html, site, checkModified, url) {
       for (let element of elements) {
         if (site && typeof site === 'object' && site.attribute) {
           console.log(`Specific Attribute: ${site.attribute}`);
-          const value = site.attribute === 'innerText' ? innerText(element) : element[site.attribute];
+          const value =
+            site.attribute === 'innerText'
+              ? innerText(element)
+              : element[site.attribute];
           return getMomentObject(value, url);
         }
 
@@ -406,7 +410,8 @@ function checkSelectors(article, html, site, checkModified, url) {
           }
         }
 
-        const dateString = innerText(dateElement) || dateElement.getAttribute('value');
+        const dateString =
+          innerText(dateElement) || dateElement.getAttribute('value');
         let date = getDateFromString(dateString, url);
 
         if (date) {
@@ -556,7 +561,7 @@ function getDateFromParts(nums = [], url) {
   if (!isNaN(parseInt(num3))) {
     num3 = String(num3).replace(/(\d{2,4})\b.*/, '$1');
 
-    if (num1.length === 4) { 
+    if (num1.length === 4) {
       if (num3.length === 4) {
         return null;
       }
@@ -583,7 +588,7 @@ function getDateFromParts(nums = [], url) {
     num3 = String(currentYear);
     year = parseInt(num3);
   }
-  
+
   // Month can't be greater than 12 or in the future
   if (month > 12 || month > currentMonth) {
     const _day = day;
@@ -849,41 +854,48 @@ function getPublishDate(url, checkModified) {
 function innerText(el) {
   el = el.cloneNode(true);
   el.querySelectorAll('script, style').forEach(s => s.remove());
-  return el.textContent.replace(/\n\s*\n/g, '\n').replace(/  +/g, '').trim();
+  return el.textContent
+    .replace(/\n\s*\n/g, '\n')
+    .replace(/  +/g, '')
+    .trim();
 }
 
 if (process.argv[2]) {
   const checkModified = process.argv[3] !== 'false';
-  
-  // (async () => {
-  //   const url = process.argv[2];
-  //   const parser = await new DateParser(url, checkModified).launch();
-  //   const html = await parser.getDate();
-    
-  //   const data = {
-  //     publishDate: getDateFromHTML(html, url),
-  //     modifyDate: checkModified ? getDateFromHTML(html, url, checkModified) : null
-  //   };
 
-  //   console.log({
-  //     publishDate: data.publishDate ? data.publishDate.format('YYYY-MM-DD') : null,
-  //     modifyDate: data.modifyDate ? data.modifyDate.format('YYYY-MM-DD') : null
-  //   })
+  (async () => {
+    const url = process.argv[2];
+    const parser = await new DateParser(url, checkModified).launch();
+    const html = await parser.getDate();
 
-  //   // console.log(data);
+    const data = {
+      publishDate: getDateFromHTML(html, url),
+      modifyDate: checkModified
+        ? getDateFromHTML(html, url, checkModified)
+        : null
+    };
 
-  //   parser.close();
-  // })();
-
-  getPublishDate(process.argv[2], checkModified)
-    .then(({ publishDate, modifyDate }) => {
-      publishDate = publishDate ? publishDate.format('YYYY-MM-DD') : null;
-      modifyDate = modifyDate ? modifyDate.format('YYYY-MM-DD') : null;
-      console.log({ publishDate, modifyDate, method: searchMethod });
-    })
-    .catch(e => {
-      console.log(`Error: ${e}`);
+    console.log({
+      publishDate: data.publishDate
+        ? data.publishDate.format('YYYY-MM-DD')
+        : null,
+      modifyDate: data.modifyDate ? data.modifyDate.format('YYYY-MM-DD') : null
     });
+
+    // console.log(data);
+
+    parser.close();
+  })();
+
+  //   getPublishDate(process.argv[2], checkModified)
+  //     .then(({ publishDate, modifyDate }) => {
+  //       publishDate = publishDate ? publishDate.format('YYYY-MM-DD') : null;
+  //       modifyDate = modifyDate ? modifyDate.format('YYYY-MM-DD') : null;
+  //       console.log({ publishDate, modifyDate, method: searchMethod });
+  //     })
+  //     .catch(e => {
+  //       console.log(`Error: ${e}`);
+  //     });
 }
 
 module.exports = {
