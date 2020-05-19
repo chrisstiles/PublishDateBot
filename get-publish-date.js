@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
-const DateParser = require('./date-parser');
+const DateParser = require('./src/DateParser');
 const _ = require('lodash');
 moment.suppressDeprecationWarnings = true;
 
@@ -33,8 +33,8 @@ function getArticleHtml(url) {
   });
 }
 
-const sites = require('./data/sites.json');
-const htmlOnlyDomains = require('./data/htmlOnly.json');
+const sites = require('./src/data/sites.json');
+const htmlOnlyDomains = require('./src/data/htmlOnly.json');
 let searchMethod = null;
 
 function getDateFromHTML(html, url, checkModified) {
@@ -167,8 +167,8 @@ function getDateFromHTML(html, url, checkModified) {
   return null;
 }
 
-const jsonKeys = require('./data/jsonKeys.json');
-const months = require('./data/months.json');
+const jsonKeys = require('./src/data/jsonKeys.json');
+const months = require('./src/data/months.json');
 
 function checkHTMLString(html, url, checkModified, key) {
   if (!html) return null;
@@ -176,10 +176,10 @@ function checkHTMLString(html, url, checkModified, key) {
   // Certain websites include JSON data for other posts
   // We don't attempt to parse the date from the HTML on these
   // sites to prevent the wrong date being found
-  const skipDomains = ['talkingpointsmemo.com'];
-  for (let domain of skipDomains) {
-    if (url.includes(domain)) return null;
-  }
+  // const skipDomains = ['talkingpointsmemo.com'];
+  // for (let domain of skipDomains) {
+  //   if (url.includes(domain)) return null;
+  // }
 
   const arr = key ? [key] : checkModified ? jsonKeys.modify : jsonKeys.publish;
   const regexString = `(?:(?:'|"|\\b)(?:${arr.join(
@@ -313,7 +313,7 @@ function checkLinkedData(article, url, checkModified, specificKey) {
   return null;
 }
 
-const metaAttributes = require('./data/metaAttributes.json');
+const metaAttributes = require('./src/data/metaAttributes.json');
 
 function checkMetaData(article, checkModified, url) {
   const arr = checkModified ? metaAttributes.modify : metaAttributes.publish;
@@ -336,7 +336,7 @@ function checkMetaData(article, checkModified, url) {
   return null;
 }
 
-const selectors = require('./data/selectors.json');
+const selectors = require('./src/data/selectors.json');
 
 function checkSelectors(article, html, site, checkModified, url) {
   const specificSelector =
@@ -509,7 +509,7 @@ function checkChildNodes(parent, url) {
 // When a date string is something like 1/2/20, we attempt
 // to guess which number is the month and which is the day.
 // We default parsing as <month>/<day>/<year>
-const tlds = require('./data/tlds.json');
+const tlds = require('./src/data/tlds.json');
 
 function getDateFromParts(nums = [], url) {
   if (!nums) {
@@ -865,8 +865,9 @@ if (process.argv[2]) {
 
   (async () => {
     const url = process.argv[2];
-    const parser = await new DateParser(url, checkModified).launch();
-    const html = await parser.getDate();
+    const parser = await new DateParser().launch();
+    const html = await parser.getDate(url, checkModified);
+    // console.log(html);
 
     const data = {
       publishDate: getDateFromHTML(html, url),

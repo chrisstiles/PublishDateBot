@@ -401,7 +401,7 @@ function mergeListings(listing1, listing2) {
   return submissions;
 }
 
-const ignoreDomains = require('./data/ignore.json');
+const ignoreDomains = require('./src/data/ignore.json');
 
 function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   if (hasApprovedTitle(title, regex)) return false;

@@ -16,5 +16,8 @@
     "key": ["article", "dates", "Available online"],
     "method": "linkedData"
   },
-  "deutschlandfunk.de": ".articlehead time"
+  "deutschlandfunk.de": ".articlehead time",
+  "talkingpointsmemo.com": {
+    "scraper": "fetch"
+  }
 }
