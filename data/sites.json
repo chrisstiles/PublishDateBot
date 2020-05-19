@@ -16,5 +16,6 @@
     "key": ["article", "dates", "Available online"],
     "method": "linkedData"
   },
-  "deutschlandfunk.de": ".articlehead time"
+  "deutschlandfunk.de": ".articlehead time",
+  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12"
 }
