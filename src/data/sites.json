@@ -19,5 +19,6 @@
   "deutschlandfunk.de": ".articlehead time",
   "talkingpointsmemo.com": {
     "scraper": "fetch"
-  }
+  },
+  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12"
 }
