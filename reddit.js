@@ -241,7 +241,9 @@ function submitComment(submission, publishDate, modifyDate, data) {
     if (!data.ignoreModified && modifyDate && modifyDate.isAfter(publishDate, 'd')) {
       relativeTime = modifyDate.from(today);
       dateText = `last modified ${relativeTime}`;
-      modifyText = ` and it was last updated on ${modifyDate.format('MMMM Do, YYYY')}`;
+      modifyText = ` and it was last updated on ${modifyDate.format(
+        'MMMM Do, YYYY'
+      )} (${today.diff(modifyDate, 'd')} days)`;
     } else {
       relativeTime = publishDate.from(today);
       dateText = `originally published ${relativeTime}`;
@@ -250,7 +252,9 @@ function submitComment(submission, publishDate, modifyDate, data) {
     const comment = `
       **This article was ${dateText} and may contain out of date information.**  
       
-      The original publication date was ${publishDate.format('MMMM Do, YYYY')}${modifyText}.${text}
+      The original publication date was ${publishDate.format(
+        'MMMM Do, YYYY'
+      )} (${today.diff(publishDate, 'd')} days) ${modifyText}.${text}
       &nbsp;  
       &nbsp;  
       ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
