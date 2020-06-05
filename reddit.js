@@ -254,7 +254,7 @@ function submitComment(submission, publishDate, modifyDate, data) {
       
       The original publication date was ${publishDate.format(
         'MMMM Do, YYYY'
-      )} (${today.diff(publishDate, 'd')} days) ${modifyText}.${text}
+      )} (${today.diff(publishDate, 'd')} days)${modifyText}.${text}
       &nbsp;  
       &nbsp;  
       ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
