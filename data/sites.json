@@ -17,5 +17,6 @@
     "method": "linkedData"
   },
   "deutschlandfunk.de": ".articlehead time",
-  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12"
+  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
+  "muslim.co": "li[itemprop='datePublished']"
 }
