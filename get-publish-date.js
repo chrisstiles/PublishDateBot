@@ -1,3 +1,7 @@
+process.binding(
+  'http_parser'
+).HTTPParser = require('http-parser-js').HTTPParser;
+const AbortController = require('abort-controller');
 const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
 const moment = require('moment');
@@ -9,23 +13,33 @@ moment.suppressDeprecationWarnings = true;
 ////////////////////////////
 
 function getArticleHtml(url, shouldSetUserAgent) {
-  const options = {
-    method: 'GET',
-    headers: {
-      Accept: 'text/html',
-      'Content-Type': 'text/html'
-    }
-  };
-
-  if (shouldSetUserAgent) {
-    options.headers['User-Agent'] =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
-  }
-
   return new Promise((resolve, reject) => {
+    // Set timeout for fetching article
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+      reject(`Fetch timeout: ${url}`);
+    }, 25000);
+
+    const options = {
+      method: 'GET',
+      headers: {
+        Accept: 'text/html',
+        'Content-Type': 'text/html'
+      },
+      insecureHTTPParser: true,
+      signal: controller.signal
+    };
+
+    if (shouldSetUserAgent) {
+      options.headers['User-Agent'] =
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
+    }
+
     fetch(url, options)
       .then(response => {
         const { status } = response;
+        clearTimeout(timeout);
 
         if (status === 200) {
           resolve(response.text());
@@ -34,7 +48,10 @@ function getArticleHtml(url, shouldSetUserAgent) {
 
         reject(`status code ${status}, URL: ${url}`);
       })
-      .catch(reject);
+      .catch(error => {
+        clearTimeout(timeout);
+        reject(error);
+      });
   });
 }
 
@@ -828,6 +845,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
     getArticleHtml(url, shouldSetUserAgent)
       .then(html => {
         if (!html) reject('Error fetching HTML');
+        // clearTimeout(timer);
 
         const data = {
           publishDate: getDateFromHTML(html, url),
@@ -837,7 +855,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
         if (data.publishDate) {
           resolve(data);
         } else {
-          reject('No date found');
+          reject(`No date found: ${url}`);
         }
       })
       .catch(reject);
@@ -848,8 +866,6 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
 function getPublishDate(url, checkModified) {
   return new Promise((resolve, reject) => {
     try {
-      // const urlObject = new URL(url);
-
       fetchArticleAndParse(url, checkModified)
         .then(data => resolve(data))
         .catch(() => {
@@ -858,35 +874,21 @@ function getPublishDate(url, checkModified) {
           // based on the user agent making the request
           fetchArticleAndParse(url, checkModified, true)
             .then(data => resolve(data))
-            .catch(() => reject('No date found'));
+            .catch(error => {
+              // Limit the length of error message to prevent memory overflow
+              const maxErrorLength = 500;
+
+              if (typeof error === 'string') {
+                error = error.substring(0, maxErrorLength);
+              } else if (error.message) {
+                error = error.message.substring(0, maxErrorLength);
+              }
+
+              reject(error);
+            });
         });
-
-      // getArticleHtml(urlObject)
-      //   .then(html => {
-      //     if (!html) reject('Error fetching HTML');
-
-      //     const data = {
-      //       publishDate: getDateFromHTML(html, url),
-      //       modifyDate: checkModified ? getDateFromHTML(html, url, true) : null
-      //     };
-
-      //     if (data.publishDate) {
-      //       resolve(data);
-      //     } else {
-      //       // Try fetching with a user agent set
-      //       // getArticleHtml(urlObject, true)
-      //       //   .then(html => {
-
-      //       //   })
-
-      //       reject('No date found');
-      //     }
-      //   })
-      //   .catch(error => {
-      //     reject(error);
-      //   });
     } catch (error) {
-      reject(`Invalid URL: ${url}`);
+      reject(error);
     }
   });
 }

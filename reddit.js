@@ -216,13 +216,8 @@ function checkSubmission(submission, data) {
             }
 
             submitComment(submission, publishDate, modifyDate, data, url)
-              .then(() => {
-                resolve();
-              })
-              .catch(error => {
-                console.error(error);
-                resolve();
-              });
+              .then(resolve)
+              .catch(reject);
           } else {
             resolve();
           }
@@ -235,7 +230,7 @@ function checkSubmission(submission, data) {
 }
 
 function submitComment(submission, publishDate, modifyDate, data) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const text = data.text ? ` ${data.text}` : '';
     const today = moment(moment().format('YYYY-MM-DD'));
     let dateText,
@@ -289,10 +284,7 @@ function submitComment(submission, publishDate, modifyDate, data) {
           resolve();
         });
       })
-      .catch(error => {
-        console.error(error);
-        resolve();
-      });
+      .catch(reject);
   });
 }
 
