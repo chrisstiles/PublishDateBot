@@ -1,5 +1,5 @@
 ///////////////////////
-// Initialize 
+// Initialize
 ///////////////////////
 
 const config = require('./bot.config');
@@ -17,15 +17,14 @@ const clientSecret = process.env.REDDIT_CLIENT_SECRET;
 const refreshToken = process.env.REDDIT_REFRESH_TOKEN;
 const databaseURL = process.env.DATABASE_URL;
 
-
 ///////////////////////
-// Database 
+// Database
 ///////////////////////
 
 const { Client } = require('pg');
 const client = new Client({
   connectionString: databaseURL,
-  ssl: true,
+  ssl: true
 });
 
 client.connect();
@@ -55,9 +54,10 @@ function filterPreviouslyCommentedSubmissions(submissions) {
       text: queryString,
       values: ids,
       rowMode: 'array'
-    }
+    };
 
-    client.query(query)
+    client
+      .query(query)
       .then(res => {
         const uniqueIds = res.rows.map(row => {
           return row[0];
@@ -69,7 +69,7 @@ function filterPreviouslyCommentedSubmissions(submissions) {
             uniqueSubmissions.push(submission);
           }
         });
-       
+
         resolve(uniqueSubmissions);
       })
       .catch(error => {
@@ -82,21 +82,21 @@ function recordCommentedSubmission(id) {
   return new Promise(resolve => {
     const queryString = 'INSERT into comments(post_id) values($1)';
 
-    client.query(queryString, [id])
+    client
+      .query(queryString, [id])
       .then(() => {
-        console.log('Comment recorded')
+        console.log('Comment recorded');
         resolve();
       })
       .catch(error => {
         console.log(error.stack);
-        resolve(error.stack)
+        resolve(error.stack);
       });
   });
 }
 
-
 ///////////////////////
-// Reddit 
+// Reddit
 ///////////////////////
 
 // Set up Reddit client
@@ -141,10 +141,11 @@ function checkModStatus({ name, flair, flairId }) {
       .getModerators({ name: 'PublishDateBot' })
       .then(users => {
         let canModerate = !!users.length;
-        
+
         if (canModerate && (flair || flairId)) {
           const permissions = users[0]['mod_permissions'];
-          canModerate = permissions.includes('all') || permissions.includes('flair');
+          canModerate =
+            permissions.includes('all') || permissions.includes('flair');
         }
 
         resolve(canModerate);
@@ -152,7 +153,7 @@ function checkModStatus({ name, flair, flairId }) {
       .catch(error => {
         console.log(error);
         resolve(false);
-      })
+      });
   });
 }
 
@@ -160,32 +161,29 @@ function checkModStatus({ name, flair, flairId }) {
 // and comments if an out of date link is found
 function checkSubreddit(data) {
   return new Promise((resolve, reject) => {
-    checkModStatus(data)
-      .then(canModerate => {
-        data.canModerate = canModerate;
-        getSubmissions(data.name)
-          .then(mergedSubmissions => {
-            if (!mergedSubmissions) {
-              resolve();
-              return;
+    checkModStatus(data).then(canModerate => {
+      data.canModerate = canModerate;
+      getSubmissions(data.name).then(mergedSubmissions => {
+        if (!mergedSubmissions) {
+          resolve();
+          return;
+        }
+
+        filterPreviouslyCommentedSubmissions(mergedSubmissions)
+          .then(submissions => {
+            const promises = [];
+
+            for (let submission of submissions) {
+              promises.push(checkSubmission(submission, data));
             }
 
-            filterPreviouslyCommentedSubmissions(mergedSubmissions)
-              .then(submissions => {
-                const promises = [];
-
-                for (let submission of submissions) {
-                  promises.push(checkSubmission(submission, data));
-                }
-
-                Promise.allSettled(promises)
-                  .then(() => {
-                    resolve();
-                  });
-              })
-              .catch(reject);
-          });
+            Promise.allSettled(promises).then(() => {
+              resolve();
+            });
+          })
+          .catch(reject);
       });
+    });
   });
 }
 
@@ -199,14 +197,19 @@ function checkSubmission(submission, data) {
       getPublishDate(url, !ignoreModified)
         .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
-          const postDate = moment(moment.utc(createdUTC, 'X').format('YYYY-MM-DD'));
+          const postDate = moment(
+            moment.utc(createdUTC, 'X').format('YYYY-MM-DD')
+          );
           const outdatedDate = postDate.subtract(time, units);
-          
+
           if (publishDate.isBefore(outdatedDate, 'd')) {
             if (!ignoreModified && modifyDate) {
               modifyDate = moment(modifyDate.format('YYYY-MM-DD'));
 
-              if (modifyDate.isAfter(outdatedDate, 'd') && modifyDate.isAfter(publishDate, 'd')) {
+              if (
+                modifyDate.isAfter(outdatedDate, 'd') &&
+                modifyDate.isAfter(publishDate, 'd')
+              ) {
                 resolve();
                 return;
               }
@@ -224,7 +227,7 @@ function checkSubmission(submission, data) {
             resolve();
           }
         })
-        .catch(reject)
+        .catch(reject);
     } else {
       resolve();
     }
@@ -235,10 +238,15 @@ function submitComment(submission, publishDate, modifyDate, data) {
   return new Promise(resolve => {
     const text = data.text ? ` ${data.text}` : '';
     const today = moment(moment().format('YYYY-MM-DD'));
-    let dateText, modifyText = '';
+    let dateText,
+      modifyText = '';
     let relativeTime;
 
-    if (!data.ignoreModified && modifyDate && modifyDate.isAfter(publishDate, 'd')) {
+    if (
+      !data.ignoreModified &&
+      modifyDate &&
+      modifyDate.isAfter(publishDate, 'd')
+    ) {
       relativeTime = modifyDate.from(today);
       dateText = `last modified ${relativeTime}`;
       modifyText = ` and it was last updated on ${modifyDate.format(
@@ -249,12 +257,16 @@ function submitComment(submission, publishDate, modifyDate, data) {
       dateText = `originally published ${relativeTime}`;
     }
 
+    const userText =
+      submission.author && submission.author.name
+        ? `, posted by ${submission.author.name}`
+        : '';
     const comment = `
       **This article was ${dateText} and may contain out of date information.**  
       
       The original publication date was ${publishDate.format(
         'MMMM Do, YYYY'
-      )} (${today.diff(publishDate, 'd')} days)${modifyText}.${text}
+      )} (${today.diff(publishDate, 'd')} days${userText})${modifyText}.${text}
       &nbsp;  
       &nbsp;  
       ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
@@ -264,7 +276,8 @@ function submitComment(submission, publishDate, modifyDate, data) {
 
     resolve();
 
-    submission.reply(stripIndent(comment))
+    submission
+      .reply(stripIndent(comment))
       .then(() => {
         const promises = [
           assignFlair(submission, data),
@@ -272,10 +285,9 @@ function submitComment(submission, publishDate, modifyDate, data) {
           sendMessage(submission, relativeTime, publishDate, modifyDate)
         ];
 
-        Promise.allSettled(promises)
-          .then(() => {
-            resolve();
-          });
+        Promise.allSettled(promises).then(() => {
+          resolve();
+        });
       })
       .catch(error => {
         console.error(error);
@@ -294,13 +306,16 @@ function assignFlair(submission, data) {
         .then(templates => {
           let flairTemplateId = null;
 
-          // Try to confirm 
+          // Try to confirm
           for (let template of templates) {
             const id = template['flair_template_id'];
             const text = template['flair_text'];
 
             if (id && text) {
-              if (flairId && id === flairId || flair.toLowerCase() === text.toLowerCase()) {
+              if (
+                (flairId && id === flairId) ||
+                flair.toLowerCase() === text.toLowerCase()
+              ) {
                 flairTemplateId = id;
                 break;
               }
@@ -310,7 +325,7 @@ function assignFlair(submission, data) {
           // Assign correct flair to post
           if (flairTemplateId) {
             submission
-              .selectFlair({ 'flair_template_id': flairTemplateId })
+              .selectFlair({ flair_template_id: flairTemplateId })
               .then(() => {
                 resolve();
               })
@@ -326,7 +341,7 @@ function assignFlair(submission, data) {
         .catch(error => {
           console.log(error);
           resolve();
-        })
+        });
     } else {
       resolve();
     }
@@ -336,15 +351,17 @@ function assignFlair(submission, data) {
 // Send a message to me when the bot comments on a post. This will help
 // me to check for incorrect dates and improve the bot's accuracy
 function sendMessage(submission, relativeTime, publishDate, modifyDate) {
-  const modifyText = 
-    modifyDate && modifyDate.isAfter(publishDate, 'd') ?
-    modifyDate.format('MMMM Do, YYYY') : 'None';
+  const modifyText =
+    modifyDate && modifyDate.isAfter(publishDate, 'd')
+      ? modifyDate.format('MMMM Do, YYYY')
+      : 'None';
 
   return new Promise(resolve => {
-    reddit.composeMessage({
-      to: 'cstiles',
-      subject: `Submitted comment: article published ${relativeTime}.`,
-      text: stripIndent(`
+    reddit
+      .composeMessage({
+        to: 'cstiles',
+        subject: `Submitted comment: article published ${relativeTime}.`,
+        text: stripIndent(`
         Submission: ${submission.permalink}
 
         Link: ${submission.url}
@@ -353,13 +370,14 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
         
         Modify Date: ${modifyText}
       `)
-    }).then(() => {
-      resolve();
-    })
-    .catch(error => {
-      console.log(error);
-      resolve();
-    });
+      })
+      .then(() => {
+        resolve();
+      })
+      .catch(error => {
+        console.log(error);
+        resolve();
+      });
   });
 }
 
@@ -370,7 +388,7 @@ function mergeListings(listing1, listing2) {
     ids.push(submission.id);
     return submission;
   });
-  
+
   for (let submission of listing2) {
     const { id } = submission;
     if (!ids.includes(id)) {
@@ -390,7 +408,7 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   try {
     const urlObject = new URL(postURL);
     const { hostname: url } = urlObject;
-    
+
     // Do not check certain domains
     for (let domain of ignoreDomains) {
       if (url.includes(domain)) return false;
@@ -398,7 +416,7 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
 
     // Check links that do not link to media
     return !media;
-  } catch(error) {
+  } catch (error) {
     return false;
   }
 }
@@ -407,7 +425,7 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
 // include the date in the title in a specific format
 function hasApprovedTitle(title, regex) {
   if (!title || !regex) return false;
-  const regexString = regex.replace('<month>', `(${months.join('|')})`)
+  const regexString = regex.replace('<month>', `(${months.join('|')})`);
   return !!title.match(new RegExp(regexString, 'i'));
 }
 
@@ -418,15 +436,14 @@ function runBot() {
   subreddits.forEach(data => {
     if (!data.name || isNaN(data.time)) return;
     if (!['days', 'months', 'weeks'].includes(data.units)) data.units = 'days';
-    
+
     promises.push(checkSubreddit(data));
   });
 
-  Promise.allSettled(promises)
-    .then(() => {
-      console.log('All done');
-      client.end();
-    });
+  Promise.allSettled(promises).then(() => {
+    console.log('All done');
+    client.end();
+  });
 }
 
 runBot();
