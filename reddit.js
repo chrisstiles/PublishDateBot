@@ -269,8 +269,6 @@ function submitComment(submission, publishDate, modifyDate, data) {
       [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
     `;
 
-    resolve();
-
     submission
       .reply(stripIndent(comment))
       .then(() => {
