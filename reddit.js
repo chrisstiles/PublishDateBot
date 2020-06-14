@@ -24,7 +24,9 @@ const databaseURL = process.env.DATABASE_URL;
 const { Client } = require('pg');
 const client = new Client({
   connectionString: databaseURL,
-  ssl: true
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 client.connect();
@@ -222,7 +224,10 @@ function checkSubmission(submission, data) {
             resolve();
           }
         })
-        .catch(reject);
+        .catch(error => {
+          console.log(error);
+          reject(error);
+        });
     } else {
       resolve();
     }

@@ -18,5 +18,9 @@
   },
   "deutschlandfunk.de": ".articlehead time",
   "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
-  "muslim.co": "li[itemprop='datePublished']"
+  "muslim.co": "li[itemprop='datePublished']",
+  "msn.com": ".authortime-info time[datetime]",
+  "globaltimes.cn": ".article-source",
+  "en.farsnews.ir": ".date-news",
+  "imeche.org": ".panel__content--fixed"
 }

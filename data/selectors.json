@@ -45,7 +45,8 @@
     "entry__info",
     "wrap-date-location",
     "story .citation",
-    "ArticleTitle"
+    "ArticleTitle",
+    "createddate"
   ],
   "modify": [
     "dateModified",

@@ -19,7 +19,7 @@ function getArticleHtml(url, shouldSetUserAgent) {
     const timeout = setTimeout(() => {
       controller.abort();
       reject(`Fetch timeout: ${url}`);
-    }, 25000);
+    }, 30000);
 
     const options = {
       method: 'GET',
@@ -845,7 +845,6 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
     getArticleHtml(url, shouldSetUserAgent)
       .then(html => {
         if (!html) reject('Error fetching HTML');
-        // clearTimeout(timer);
 
         const data = {
           publishDate: getDateFromHTML(html, url),
