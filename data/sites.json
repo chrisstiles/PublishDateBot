@@ -22,5 +22,6 @@
   "msn.com": ".authortime-info time[datetime]",
   "globaltimes.cn": ".article-source",
   "en.farsnews.ir": ".date-news",
-  "imeche.org": ".panel__content--fixed"
+  "imeche.org": ".panel__content--fixed",
+  "quantamagazine.org": ".post__title__author-date"
 }
