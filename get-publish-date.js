@@ -1,9 +1,8 @@
 process.binding(
   'http_parser'
 ).HTTPParser = require('http-parser-js').HTTPParser;
-const AbortController = require('abort-controller');
-const fetch = require('node-fetch');
 const { JSDOM } = require('jsdom');
+const { log, fetchTimeout } = require('./util');
 const moment = require('moment');
 const _ = require('lodash');
 moment.suppressDeprecationWarnings = true;
@@ -14,13 +13,6 @@ moment.suppressDeprecationWarnings = true;
 
 function getArticleHtml(url, shouldSetUserAgent) {
   return new Promise((resolve, reject) => {
-    // Set timeout for fetching article
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      controller.abort();
-      reject(`Fetch timeout: ${url}`);
-    }, 30000);
-
     const options = {
       method: 'GET',
       headers: {
@@ -28,7 +20,7 @@ function getArticleHtml(url, shouldSetUserAgent) {
         'Content-Type': 'text/html'
       },
       insecureHTTPParser: true,
-      signal: controller.signal
+      highWaterMark: 1024 * 1024
     };
 
     if (shouldSetUserAgent) {
@@ -36,22 +28,16 @@ function getArticleHtml(url, shouldSetUserAgent) {
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
     }
 
-    fetch(url, options)
+    fetchTimeout(url, 30000, options)
       .then(response => {
-        const { status } = response;
-        clearTimeout(timeout);
-
-        if (status === 200) {
+        if (response.status === 200) {
           resolve(response.text());
           return;
         }
 
-        reject(`status code ${status}, URL: ${url}`);
+        reject(`status code ${response.status}, URL: ${url}`);
       })
-      .catch(error => {
-        clearTimeout(timeout);
-        reject(error);
-      });
+      .catch(reject);
   });
 }
 
@@ -414,7 +400,7 @@ function checkSelectors(article, html, site, checkModified, url) {
     if (elements && elements.length) {
       for (let element of elements) {
         if (site && typeof site === 'object' && site.attribute) {
-          console.log(`Specific Attribute: ${site.attribute}`);
+          log(`Specific Attribute: ${site.attribute}`);
           const value =
             site.attribute === 'innerText'
               ? innerText(element)
@@ -441,7 +427,7 @@ function checkSelectors(article, html, site, checkModified, url) {
         let date = getDateFromString(dateString, url);
 
         if (date) {
-          console.log(`dateString: ${dateString}`);
+          log(`dateString: ${dateString}`);
           return date;
         }
 
@@ -474,7 +460,7 @@ function checkSelectors(article, html, site, checkModified, url) {
       let date = getDateFromString(dateString, url);
 
       if (date) {
-        console.log(`Time element dateString: ${dateString}`);
+        log(`Time element dateString: ${dateString}`);
         return date;
       }
 
@@ -524,7 +510,7 @@ function checkChildNodes(parent, url) {
     const date = getDateFromString(text, url);
 
     if (date) {
-      console.log(`Child node: ${text}`);
+      log(`Child node: ${text}`);
       return date;
     }
   }
@@ -866,7 +852,7 @@ function getPublishDate(url, checkModified) {
   return new Promise((resolve, reject) => {
     try {
       fetchArticleAndParse(url, checkModified)
-        .then(data => resolve(data))
+        .then(resolve)
         .catch(() => {
           // If the first fetch fails try requesting with a user agent
           // agent set. Somtimes websites return different HTML
@@ -903,6 +889,7 @@ function innerText(el) {
 }
 
 if (process.argv[2]) {
+  log('Logging test');
   const checkModified = process.argv[3] !== 'false';
 
   getPublishDate(process.argv[2], checkModified)

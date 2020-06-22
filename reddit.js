@@ -6,6 +6,7 @@ const config = require('./bot.config');
 const { getPublishDate, months } = require('./get-publish-date');
 const moment = require('moment');
 const stripIndent = require('strip-indent');
+const { log } = require('./util');
 
 // Environment Variables
 if (process.env.NODE_ENV !== 'production') {
@@ -74,26 +75,15 @@ function filterPreviouslyCommentedSubmissions(submissions) {
 
         resolve(uniqueSubmissions);
       })
-      .catch(error => {
-        reject(error.stack);
-      });
+      .catch(reject);
   });
 }
 
 function recordCommentedSubmission(id) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const queryString = 'INSERT into comments(post_id) values($1)';
 
-    client
-      .query(queryString, [id])
-      .then(() => {
-        console.log('Comment recorded');
-        resolve();
-      })
-      .catch(error => {
-        console.log(error.stack);
-        resolve(error.stack);
-      });
+    client.query(queryString, [id]).then(resolve).catch(reject);
   });
 }
 
@@ -126,7 +116,7 @@ function getSubmissions(name) {
             resolve(submissions);
           })
           .catch(error => {
-            console.error(error);
+            log(error);
             resolve(null);
           });
       });
@@ -153,7 +143,7 @@ function checkModStatus({ name, flair, flairId }) {
         resolve(canModerate);
       })
       .catch(error => {
-        console.log(error);
+        log(error);
         resolve(false);
       });
   });
@@ -161,7 +151,7 @@ function checkModStatus({ name, flair, flairId }) {
 
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
-function checkSubreddit(data) {
+async function checkSubreddit(data) {
   return new Promise((resolve, reject) => {
     checkModStatus(data).then(canModerate => {
       data.canModerate = canModerate;
@@ -179,9 +169,7 @@ function checkSubreddit(data) {
               promises.push(checkSubmission(submission, data));
             }
 
-            Promise.allSettled(promises).then(() => {
-              resolve();
-            });
+            Promise.allSettled(promises).then(resolve);
           })
           .catch(reject);
       });
@@ -195,7 +183,7 @@ function checkSubmission(submission, data) {
 
     if (shouldCheckSubmission(submission, data)) {
       const { time, units, ignoreModified } = data;
-      console.log(`Checking: ${submission.url}`);
+
       getPublishDate(url, !ignoreModified)
         .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
@@ -225,7 +213,7 @@ function checkSubmission(submission, data) {
           }
         })
         .catch(error => {
-          console.log(error);
+          log(error);
           reject(error);
         });
     } else {
@@ -289,16 +277,14 @@ function submitComment(submission, publishDate, modifyDate, data) {
           sendMessage(submission, relativeTime, publishDate, modifyDate)
         ];
 
-        Promise.allSettled(promises).then(() => {
-          resolve();
-        });
+        Promise.allSettled(promises).then(resolve);
       })
       .catch(reject);
   });
 }
 
 function assignFlair(submission, data) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const { flair = '', flairId = '', canModerate } = data;
 
     if ((flair || flairId) && canModerate) {
@@ -327,22 +313,13 @@ function assignFlair(submission, data) {
           if (flairTemplateId) {
             submission
               .selectFlair({ flair_template_id: flairTemplateId })
-              .then(() => {
-                resolve();
-              })
-              .catch(error => {
-                console.log(error);
-                resolve();
-              });
+              .then(resolve)
+              .catch(reject);
           } else {
-            console.log('Correct flair not found');
-            resolve();
+            reject('Correct flair not found');
           }
         })
-        .catch(error => {
-          console.log(error);
-          resolve();
-        });
+        .catch(reject);
     } else {
       resolve();
     }
@@ -357,7 +334,7 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
       ? modifyDate.format('MMMM Do, YYYY')
       : 'None';
 
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     reddit
       .composeMessage({
         to: 'cstiles',
@@ -372,13 +349,8 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
         Modify Date: ${modifyText}
       `)
       })
-      .then(() => {
-        resolve();
-      })
-      .catch(error => {
-        console.log(error);
-        resolve();
-      });
+      .then(resolve)
+      .catch(reject);
   });
 }
 
