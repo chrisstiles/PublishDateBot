@@ -195,7 +195,7 @@ function checkSubmission(submission, data) {
 
     if (shouldCheckSubmission(submission, data)) {
       const { time, units, ignoreModified } = data;
-
+      console.log(`Checking: ${submission.url}`);
       getPublishDate(url, !ignoreModified)
         .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
