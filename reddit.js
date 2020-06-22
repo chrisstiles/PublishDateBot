@@ -251,27 +251,33 @@ function submitComment(submission, publishDate, modifyDate, data) {
       dateText = `last modified ${relativeTime}`;
       modifyText = ` and it was last updated on ${modifyDate.format(
         'MMMM Do, YYYY'
-      )} (${today.diff(modifyDate, 'd')} days)`;
+      )}`;
     } else {
       relativeTime = publishDate.from(today);
       dateText = `originally published ${relativeTime}`;
     }
 
-    const userText =
-      submission.author && submission.author.name
-        ? `, posted by ${submission.author.name}`
-        : '';
+    const feedbackUrl = encodeURI(
+      [
+        'https://www.reddit.com/message/compose?to=PublishDateBot',
+        'subject=Bot Feedback',
+        `message=Regarding: ${submission.url}`,
+        `u=${submission.author.name}`,
+        `d=${today.diff(publishDate, 'd')}`
+      ].join('&')
+    );
+
     const comment = `
       **This article was ${dateText} and may contain out of date information.**  
       
       The original publication date was ${publishDate.format(
         'MMMM Do, YYYY'
-      )} (${today.diff(publishDate, 'd')} days${userText})${modifyText}.${text}
+      )}${modifyText}.${text}
       &nbsp;  
       &nbsp;  
       ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
-
-      [^(Send Feedback)](https://www.reddit.com/message/compose?to=PublishDateBot)  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
+      
+      [^(Send Feedback)](${feedbackUrl})  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
     `;
 
     submission
