@@ -257,15 +257,15 @@ function submitComment(submission, publishDate, modifyDate, data) {
       dateText = `originally published ${relativeTime}`;
     }
 
-    const feedbackUrl = encodeURI(
-      [
-        'https://www.reddit.com/message/compose?to=PublishDateBot',
-        'subject=Bot Feedback',
-        `message=Regarding: ${submission.url}`,
-        `u=${submission.author.name}`,
-        `d=${today.diff(publishDate, 'd')}`
-      ].join('&')
-    );
+    const feedbackUrl = [
+      'https://www.reddit.com/message/compose?to=PublishDateBot',
+      'subject=Bot Feedback',
+      `message=Regarding: ${submission.url}`,
+      `u=${submission.author.name}`,
+      `d=${today.diff(publishDate, 'd')}`
+    ]
+      .join('&')
+      .replace('');
 
     const comment = `
       **This article was ${dateText} and may contain out of date information.**  
