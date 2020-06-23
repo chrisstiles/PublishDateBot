@@ -248,12 +248,10 @@ function submitComment(submission, publishDate, modifyDate, data) {
     const feedbackUrl = [
       'https://www.reddit.com/message/compose?to=PublishDateBot',
       'subject=Bot Feedback',
-      `message=Regarding: ${encodeURIComponent(submission.url)}`,
-      `u=${encodeURIComponent(submission.author.name)}`,
+      `message=Regarding: ${submission.url}`,
+      `u=${submission.author.name}`,
       `d=${today.diff(publishDate, 'd')}`
-    ]
-      .join('&')
-      .replace('');
+    ].join('&');
 
     const comment = `
       **This article was ${dateText} and may contain out of date information.**  
