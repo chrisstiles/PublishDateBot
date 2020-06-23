@@ -247,8 +247,8 @@ function submitComment(submission, publishDate, modifyDate, data) {
 
     const feedbackUrl = [
       'https://www.reddit.com/message/compose?to=PublishDateBot',
-      'subject=Bot Feedback',
-      `message=Regarding: ${submission.url}`,
+      'subject=Feedback',
+      `message=${submission.url}`,
       `u=${submission.author.name}`,
       `d=${today.diff(publishDate, 'd')}`
     ].join('&');
