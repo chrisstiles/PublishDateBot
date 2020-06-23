@@ -23,5 +23,6 @@
   "globaltimes.cn": ".article-source",
   "en.farsnews.ir": ".date-news",
   "imeche.org": ".panel__content--fixed",
-  "quantamagazine.org": ".post__title__author-date"
+  "quantamagazine.org": ".post__title__author-date",
+  "cnn.com": "meta[name='lastmod']"
 }
