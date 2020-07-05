@@ -889,7 +889,6 @@ function innerText(el) {
 }
 
 if (process.argv[2]) {
-  log('Logging test');
   const checkModified = process.argv[3] !== 'false';
 
   getPublishDate(process.argv[2], checkModified)
