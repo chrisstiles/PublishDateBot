@@ -25,5 +25,9 @@
   "imeche.org": ".panel__content--fixed",
   "quantamagazine.org": ".post__title__author-date",
   "cnn.com": "meta[name='lastmod']",
-  "infacto.bg": "time[itemprop='datePublished']"
+  "infacto.bg": "time[itemprop='datePublished']",
+  "oaxmedia.com": {
+    "key": ".s-content__header-meta",
+    "attribute": "innerText"
+  }
 }
