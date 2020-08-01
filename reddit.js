@@ -245,10 +245,14 @@ function submitComment(submission, publishDate, modifyDate, data) {
       dateText = `originally published ${relativeTime}`;
     }
 
+    // Reddit encodes URLs on their end, but certain characters
+    // are omitted so we encode those ourselves
+    const encode = str => str.replace(/\(/g, '%28').replace(/\)/g, '%29');
+
     const feedbackUrl = [
       'https://www.reddit.com/message/compose?to=PublishDateBot',
       'subject=Feedback',
-      `message=${submission.url}`,
+      `message=${encode(submission.url)}`,
       `u=${submission.author.name}`,
       `d=${today.diff(publishDate, 'd')}`
     ].join('&');
