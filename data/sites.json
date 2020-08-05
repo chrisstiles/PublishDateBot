@@ -29,5 +29,6 @@
   "oaxmedia.com": {
     "key": ".s-content__header-meta",
     "attribute": "innerText"
-  }
+  },
+  "globalnews.ca": ".c-byline__date--pubDate"
 }
