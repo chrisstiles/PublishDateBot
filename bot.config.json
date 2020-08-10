@@ -18,6 +18,11 @@
       "name": "Coronavirus",
       "time": 2,
       "units": "months"
+    },
+    {
+      "name": "CoronavirusIndy",
+      "time": 20,
+      "units": "days"
     }
   ]
 }
