@@ -382,7 +382,12 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
 
   try {
     const urlObject = new URL(postURL);
-    const { hostname: url } = urlObject;
+    const { hostname: url, pathname } = urlObject;
+
+    // Do not check root domains
+    if (pathname === '/') {
+      return null;
+    }
 
     // Do not check certain domains
     for (let domain of ignoreDomains) {
