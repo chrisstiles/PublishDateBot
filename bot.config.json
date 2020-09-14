@@ -23,6 +23,11 @@
       "name": "CoronavirusIndy",
       "time": 20,
       "units": "days"
+    },
+    {
+      "name": "china",
+      "time": 30,
+      "units": "days"
     }
   ]
 }
