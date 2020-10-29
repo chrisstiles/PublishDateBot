@@ -28,6 +28,11 @@
       "name": "china",
       "time": 30,
       "units": "days"
+    },
+    {
+      "name": "FreeTheUyghurs",
+      "time": 7,
+      "units": "days"
     }
   ]
 }
