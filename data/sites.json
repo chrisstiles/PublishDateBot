@@ -30,5 +30,6 @@
     "key": ".s-content__header-meta",
     "attribute": "innerText"
   },
-  "globalnews.ca": ".c-byline__date--pubDate"
+  "globalnews.ca": ".c-byline__date--pubDate",
+  "hackernoon.com": "*[class*=StoryMeta] .date"
 }
