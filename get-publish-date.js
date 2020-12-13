@@ -404,8 +404,9 @@ function checkSelectors(article, html, site, checkModified, url) {
           const value =
             site.attribute === 'innerText'
               ? innerText(element)
-              : element[site.attribute];
-          return getMomentObject(value, url);
+              : element.getAttribute(site.attribute);
+
+          return getMomentObject(value, url, true);
         }
 
         const dateElement = element.querySelector('time') || element;
@@ -684,9 +685,11 @@ function getDateFromString(string, url) {
 // Helpers
 ////////////////////////////
 
-function getMomentObject(dateString, url) {
+function getMomentObject(dateString, url, ignoreLength) {
   if (!dateString) return null;
-  if (dateString.length && dateString.length > 35) return null;
+  if (!ignoreLength && dateString.length && dateString.length > 100) {
+    return null;
+  }
 
   let date = moment(dateString);
   if (isValid(date)) return date;
@@ -706,9 +709,18 @@ function getMomentObject(dateString, url) {
     }
   }
 
+  const monthsJoined = months.join('|');
+  const dateSearch = new RegExp(`((((${monthsJoined})\.?\s+\d{1,2})|(\d{1,2}\s+(${monthsJoined})\.?)),?\s+\d{2,4}\b)`, 'i');
+  const matchedDate = dateString.match(dateSearch);
+
+  if (matchedDate) {
+    date = moment(matchedDate[0]);
+    if (isValid(date)) return date;
+  }
+
   for (let month of months) {
     if (dateString.toLowerCase().includes(month)) {
-      const monthSearch = new RegExp(`(\\d{1,4} )?${month}`);
+      const monthSearch = new RegExp(`(\\d{1,4} )?${month}`, 'i');
       const startIndex = dateString.search(monthSearch);
       const yearIndex = dateString.search(/\d{4}/);
       const endIndex = yearIndex === -1 ? dateString.length : yearIndex + 4;
@@ -800,15 +812,29 @@ function isValid(date) {
     date.year(year);
   }
 
+  if (!date.isValid()) {
+    return false;
+  }
+
   // Check if the date is on or before tomorrow to account for time zone differences
   const tomorrow = moment().add(1, 'd');
+
+  // There are a lot of false positives that return
+  // January 1st of the current year. To avoid frequent
+  // incorrect dates, we typically assume that a Jan 1
+  // date is invalid unless the current month is January
+  const jan1 = moment(`${new Date().getFullYear()}-01-01`);
+
+  if (tomorrow.month() !== 0 && date.isSame(jan1, 'd')) {
+    return false;
+  }
+
   const longAgo = moment().subtract(19, 'y');
   const inputLength = date._i.length;
   const digits = date._i.match(/\d/g);
   const digitLength = !digits ? 0 : digits.length;
 
   return (
-    date.isValid() &&
     date.isSameOrBefore(tomorrow, 'd') &&
     date.isSameOrAfter(longAgo) &&
     inputLength >= 5 &&

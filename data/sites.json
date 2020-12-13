@@ -31,5 +31,9 @@
     "attribute": "innerText"
   },
   "globalnews.ca": ".c-byline__date--pubDate",
-  "hackernoon.com": "*[class*=StoryMeta] .date"
+  "hackernoon.com": "*[class*=StoryMeta] .date",
+  "usatoday.com": {
+    "key": ".gnt_ar_dt",
+    "attribute": "aria-label"
+  }
 }
