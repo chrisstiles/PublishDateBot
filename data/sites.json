@@ -35,5 +35,6 @@
   "usatoday.com": {
     "key": ".gnt_ar_dt",
     "attribute": "aria-label"
-  }
+  },
+  "kathmandupost.com": ".page-detail--content .updated-time"
 }
