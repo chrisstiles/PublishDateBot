@@ -332,10 +332,15 @@ function assignFlair(submission, data) {
 // Send a message to me when the bot comments on a post. This will help
 // me to check for incorrect dates and improve the bot's accuracy
 function sendMessage(submission, relativeTime, publishDate, modifyDate) {
-  const modifyText =
-    modifyDate && modifyDate.isAfter(publishDate, 'd')
-      ? modifyDate.format('MMMM Do, YYYY')
-      : 'None';
+  const hasModifyDate = modifyDate && modifyDate.isAfter(publishDate, 'd');
+
+  if (!shouldSendMessage(hasModifyDate ? modifyDate : publishDate)) {
+    return Promise.resolve();
+  }
+
+  const modifyText = hasModifyDate
+    ? modifyDate.format('MMMM Do, YYYY')
+    : 'None';
 
   return new Promise((resolve, reject) => {
     reddit
@@ -355,6 +360,19 @@ function sendMessage(submission, relativeTime, publishDate, modifyDate) {
       .then(resolve)
       .catch(reject);
   });
+}
+
+// Only send me messages when the date is older than a configured
+// threshold so that I don't constantly receive notifications from the bot
+function shouldSendMessage(date) {
+  if (!config.messageThreshold || !date) {
+    return true;
+  }
+
+  const { time, units } = config.messageThreshold;
+  const threshold = moment().subtract(time, units);
+
+  return date.isBefore(threshold);
 }
 
 // Used to merge hot and rising listings without duplicate submissions
