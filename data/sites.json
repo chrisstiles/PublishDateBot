@@ -36,5 +36,6 @@
     "key": ".gnt_ar_dt",
     "attribute": "aria-label"
   },
-  "kathmandupost.com": ".page-detail--content .updated-time"
+  "kathmandupost.com": ".page-detail--content .updated-time",
+  "al-monitor.com": ".article-body time"
 }
