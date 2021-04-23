@@ -25,7 +25,7 @@ function getArticleHtml(url, shouldSetUserAgent) {
 
     if (shouldSetUserAgent) {
       options.headers['User-Agent'] =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36';
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 Safari/537.36';
     }
 
     fetchTimeout(url, 30000, options)
@@ -710,7 +710,10 @@ function getMomentObject(dateString, url, ignoreLength) {
   }
 
   const monthsJoined = months.join('|');
-  const dateSearch = new RegExp(`((((${monthsJoined})\.?\s+\d{1,2})|(\d{1,2}\s+(${monthsJoined})\.?)),?\s+\d{2,4}\b)`, 'i');
+  const dateSearch = new RegExp(
+    `((((${monthsJoined})\.?\s+\d{1,2})|(\d{1,2}\s+(${monthsJoined})\.?)),?\s+\d{2,4}\b)`,
+    'i'
+  );
   const matchedDate = dateString.match(dateSearch);
 
   if (matchedDate) {
