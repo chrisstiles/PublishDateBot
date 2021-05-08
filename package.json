@@ -27,7 +27,7 @@
     "express": "^4.17.1",
     "http-parser-js": "^0.5.2",
     "jsdom": "^16.2.1",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.1",
     "node-sass": "^4.13.1",
