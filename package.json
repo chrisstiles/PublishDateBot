@@ -11,7 +11,7 @@
     "start": "node index.js",
     "scss": "node-sass --watch public/css -o public/css",
     "server": "nodemon index.js",
-    "reddit": "node reddit.js",
+    "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn reddit.js",
     "preinstall": "npx npm-force-resolutions"
   },
   "nodemonConfig": {
