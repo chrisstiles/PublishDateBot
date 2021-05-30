@@ -3,15 +3,15 @@
   "version": "1.2.0",
   "description": "Looks for outdated articles on Reddit",
   "engines": {
-    "node": "12.13.x",
-    "npm": "6.14.x"
+    "node": "16.2.x",
+    "npm": "7.13.x"
   },
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "scss": "node-sass --watch public/css -o public/css",
     "server": "nodemon index.js",
-    "reddit": "reddit.js",
+    "reddit": "node reddit.js",
     "preinstall": "npx npm-force-resolutions"
   },
   "nodemonConfig": {
@@ -23,24 +23,21 @@
   "license": "ISC",
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "dotenv": "^6.2.0",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
-    "http-parser-js": "^0.5.2",
+    "http-parser-js": "^0.5.3",
     "jsdom": "^16.2.1",
     "lodash": "^4.17.19",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.1",
-    "node-sass": "^4.13.1",
-    "pg": "^7.18.2",
-    "snoowrap": "^1.21.0",
-    "strip-indent": "^2.0.0"
+    "node-sass": "^6.0.0",
+    "pg": "^8.6.0",
+    "snoowrap": "^1.23.0",
+    "strip-indent": "^3.0.0"
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
+    "eslint": "^7.27.0",
     "minimist": "^1.2.5",
-    "nodemon": "^1.19.4"
-  },
-  "resolutions": {
-    "minimist": "^1.2.5"
+    "nodemon": "^2.0.7"
   }
 }

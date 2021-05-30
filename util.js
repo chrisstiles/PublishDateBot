@@ -9,7 +9,8 @@ function log(message) {
     message = message.toString();
   }
 
-  setImmediate(() => fs.writeSync(process.stdout.fd, message + '\n'));
+  // setImmediate(() => fs.writeSync(process.stdout.fd, message + '\n'));
+  setImmediate(() => process.stdout.write(message + '\n'));
 }
 
 function fetchTimeout(url, ms, { signal, ...options } = {}) {
@@ -20,4 +21,10 @@ function fetchTimeout(url, ms, { signal, ...options } = {}) {
   return promise.finally(() => clearTimeout(timeout));
 }
 
-module.exports = { log, fetchTimeout };
+function delay(t, v) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve.bind(null, v), t);
+  });
+}
+
+module.exports = { log, fetchTimeout, delay };

@@ -1,6 +1,5 @@
-process.binding(
-  'http_parser'
-).HTTPParser = require('http-parser-js').HTTPParser;
+// process.binding('http_parser').HTTPParser =
+//   require('http-parser-js').HTTPParser;
 const { JSDOM } = require('jsdom');
 const { log, fetchTimeout } = require('./util');
 const moment = require('moment');
@@ -37,7 +36,9 @@ function getArticleHtml(url, shouldSetUserAgent) {
 
         reject(`status code ${response.status}, URL: ${url}`);
       })
-      .catch(reject);
+      .catch(error => {
+        reject(`${error}, ${url}`);
+      });
   });
 }
 
@@ -243,7 +244,8 @@ function checkURL(url) {
     if (url.includes(domain)) return null;
   }
 
-  const dateTest = /([\./\-_]{0,1}(19|20)\d{2})[\./\-_]{0,1}(([0-3]{0,1}[0-9][\./\-_])|(\w{3,5}[\./\-_]))([0-3]{0,1}[0-9][\./\-]{0,1})/;
+  const dateTest =
+    /([\./\-_]{0,1}(19|20)\d{2})[\./\-_]{0,1}(([0-3]{0,1}[0-9][\./\-_])|(\w{3,5}[\./\-_]))([0-3]{0,1}[0-9][\./\-]{0,1})/;
   let dateString = url.match(dateTest);
 
   if (dateString) {
@@ -278,7 +280,8 @@ function getYoutubeDate(html) {
   }
 
   // Parse videos where date is like "4 hours ago"
-  const dateDifferenceTest = /(?:["']ytInitialData[",']][.\s\S]*dateText["'].*["'](?:\w+ )+) ?(\d+) ((?:second|minute|hour|day|month|year)s?) (?:ago)(?:['"])/i;
+  const dateDifferenceTest =
+    /(?:["']ytInitialData[",']][.\s\S]*dateText["'].*["'](?:\w+ )+) ?(\d+) ((?:second|minute|hour|day|month|year)s?) (?:ago)(?:['"])/i;
   const dateDifferenceArray = html.match(dateDifferenceTest);
 
   if (dateDifferenceArray && dateDifferenceArray.length >= 3) {

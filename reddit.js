@@ -151,29 +151,38 @@ function checkModStatus({ name, flair, flairId }) {
 
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
-async function checkSubreddit(data) {
+async function checkSubreddit(data, index = 0) {
+  const delay = 100;
+
   return new Promise((resolve, reject) => {
-    checkModStatus(data).then(canModerate => {
-      data.canModerate = canModerate;
-      getSubmissions(data.name).then(mergedSubmissions => {
-        if (!mergedSubmissions) {
-          resolve();
-          return;
-        }
-
-        filterPreviouslyCommentedSubmissions(mergedSubmissions)
-          .then(submissions => {
-            const promises = [];
-
-            for (let submission of submissions) {
-              promises.push(checkSubmission(submission, data));
+    setTimeout(() => {
+      try {
+        checkModStatus(data).then(canModerate => {
+          data.canModerate = canModerate;
+          getSubmissions(data.name).then(mergedSubmissions => {
+            if (!mergedSubmissions || !mergedSubmissions.length) {
+              resolve();
+              return;
             }
 
-            Promise.allSettled(promises).then(resolve);
-          })
-          .catch(reject);
-      });
-    });
+            filterPreviouslyCommentedSubmissions(mergedSubmissions)
+              .then(submissions => {
+                const promises = [];
+
+                for (let submission of submissions) {
+                  promises.push(checkSubmission(submission, data));
+                }
+
+                Promise.allSettled(promises).then(resolve);
+              })
+              .catch(reject);
+          });
+        });
+      } catch (error) {
+        log(error);
+        resolve();
+      }
+    }, delay * index);
   });
 }
 
@@ -432,11 +441,11 @@ function runBot() {
   const { subreddits } = config;
   const promises = [];
 
-  subreddits.forEach(data => {
+  subreddits.forEach((data, index) => {
     if (!data.name || isNaN(data.time)) return;
     if (!['days', 'months', 'weeks'].includes(data.units)) data.units = 'days';
 
-    promises.push(checkSubreddit(data));
+    promises.push(checkSubreddit(data, index));
   });
 
   Promise.allSettled(promises).then(() => {
