@@ -20,7 +20,6 @@
   "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
   "muslim.co": "li[itemprop='datePublished']",
   "msn.com": ".authortime-info time[datetime]",
-  "globaltimes.cn": ".article-source",
   "en.farsnews.ir": ".date-news",
   "imeche.org": ".panel__content--fixed",
   "quantamagazine.org": ".post__title__author-date",
@@ -32,10 +31,7 @@
   },
   "globalnews.ca": ".c-byline__date--pubDate",
   "hackernoon.com": "*[class*=StoryMeta] .date",
-  "usatoday.com": {
-    "key": ".gnt_ar_dt",
-    "attribute": "aria-label"
-  },
   "kathmandupost.com": ".page-detail--content .updated-time",
-  "al-monitor.com": ".article-body time"
+  "al-monitor.com": ".article-body time",
+  "thestandard.com.hk": "#content .heading"
 }

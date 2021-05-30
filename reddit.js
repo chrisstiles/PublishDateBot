@@ -3,6 +3,7 @@
 ///////////////////////
 
 const config = require('./bot.config');
+const Promise = require('bluebird');
 const { getPublishDate, months } = require('./get-publish-date');
 const moment = require('moment');
 const stripIndent = require('strip-indent');
@@ -151,38 +152,40 @@ function checkModStatus({ name, flair, flairId }) {
 
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
-async function checkSubreddit(data, index = 0) {
-  const delay = 100;
-
+async function checkSubreddit(data) {
   return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      try {
-        checkModStatus(data).then(canModerate => {
-          data.canModerate = canModerate;
-          getSubmissions(data.name).then(mergedSubmissions => {
-            if (!mergedSubmissions || !mergedSubmissions.length) {
-              resolve();
-              return;
-            }
+    try {
+      checkModStatus(data).then(canModerate => {
+        data.canModerate = canModerate;
+        getSubmissions(data.name).then(mergedSubmissions => {
+          if (!mergedSubmissions || !mergedSubmissions.length) {
+            resolve();
+            return;
+          }
 
-            filterPreviouslyCommentedSubmissions(mergedSubmissions)
-              .then(submissions => {
-                const promises = [];
-
-                for (let submission of submissions) {
-                  promises.push(checkSubmission(submission, data));
-                }
-
-                Promise.allSettled(promises).then(resolve);
-              })
-              .catch(reject);
-          });
+          filterPreviouslyCommentedSubmissions(mergedSubmissions)
+            .then(async submissions => {
+              Promise.map(
+                submissions,
+                submission => {
+                  return new Promise(resolve => {
+                    checkSubmission(submission, data)
+                      .then(resolve)
+                      .catch(error => {
+                        log(error);
+                        resolve();
+                      });
+                  });
+                },
+                { concurrency: 3 }
+              ).then(resolve);
+            })
+            .catch(reject);
         });
-      } catch (error) {
-        log(error);
-        resolve();
-      }
-    }, delay * index);
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
@@ -221,10 +224,7 @@ function checkSubmission(submission, data) {
             resolve();
           }
         })
-        .catch(error => {
-          log(error);
-          reject(error);
-        });
+        .catch(reject);
     } else {
       resolve();
     }
@@ -282,14 +282,15 @@ function submitComment(submission, publishDate, modifyDate, data) {
 
     submission
       .reply(stripIndent(comment))
-      .then(() => {
-        const promises = [
-          assignFlair(submission, data),
-          recordCommentedSubmission(submission.id),
-          sendMessage(submission, relativeTime, publishDate, modifyDate)
-        ];
-
-        Promise.allSettled(promises).then(resolve);
+      .then(async () => {
+        try {
+          await recordCommentedSubmission(submission.id);
+          await sendMessage(submission, relativeTime, publishDate, modifyDate);
+          await assignFlair(submission, data);
+        } catch (error) {
+          log(error);
+          resolve();
+        }
       })
       .catch(reject);
   });
@@ -407,6 +408,7 @@ const ignoreDomains = require('./data/ignore.json');
 
 function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   if (hasApprovedTitle(title, regex)) return false;
+  if (postURL.trim().match(/\.pdf($|\?)/)) return false;
 
   try {
     const urlObject = new URL(postURL);
@@ -414,7 +416,7 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
 
     // Do not check root domains
     if (pathname === '/') {
-      return null;
+      return false;
     }
 
     // Do not check certain domains
@@ -438,18 +440,27 @@ function hasApprovedTitle(title, regex) {
 }
 
 function runBot() {
-  const { subreddits } = config;
-  const promises = [];
+  const { subreddits = [] } = config;
 
-  subreddits.forEach((data, index) => {
-    if (!data.name || isNaN(data.time)) return;
-    if (!['days', 'months', 'weeks'].includes(data.units)) data.units = 'days';
+  Promise.map(
+    subreddits,
+    data => {
+      if (!data.name || isNaN(data.time)) return Promise.resolve();
+      if (!['days', 'months', 'weeks'].includes(data.units))
+        data.units = 'days';
 
-    promises.push(checkSubreddit(data, index));
-  });
-
-  Promise.allSettled(promises).then(() => {
-    console.log('All done');
+      return new Promise(resolve => {
+        checkSubreddit(data)
+          .then(resolve)
+          .catch(error => {
+            log(error);
+            resolve();
+          });
+      });
+    },
+    { concurrency: 1 }
+  ).then(() => {
+    console.log('All done!');
     client.end();
   });
 }

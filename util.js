@@ -1,4 +1,3 @@
-const fs = require('fs');
 const AbortController = require('abort-controller');
 const fetch = require('node-fetch');
 
@@ -27,4 +26,8 @@ function delay(t, v) {
   });
 }
 
-module.exports = { log, fetchTimeout, delay };
+function freeRegExp() {
+  /\s*/g.exec('');
+}
+
+module.exports = { log, fetchTimeout, delay, freeRegExp };

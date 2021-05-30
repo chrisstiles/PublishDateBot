@@ -1,10 +1,25 @@
 // process.binding('http_parser').HTTPParser =
 //   require('http-parser-js').HTTPParser;
+const Promise = require('bluebird');
 const { JSDOM } = require('jsdom');
-const { log, fetchTimeout } = require('./util');
+const { log: writeLog, fetchTimeout, freeRegExp } = require('./util');
 const moment = require('moment');
 const _ = require('lodash');
 moment.suppressDeprecationWarnings = true;
+
+////////////////////////////
+// Logging
+////////////////////////////
+
+// Only log messages for successful date parsing
+// when this script is called directly
+let shouldLogDateMethod = false;
+
+function log(message, isErrorLog) {
+  if (isErrorLog || shouldLogDateMethod) {
+    writeLog(message);
+  }
+}
 
 ////////////////////////////
 // Date Parsing
@@ -24,13 +39,13 @@ function getArticleHtml(url, shouldSetUserAgent) {
 
     if (shouldSetUserAgent) {
       options.headers['User-Agent'] =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 Safari/537.36';
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36';
     }
 
     fetchTimeout(url, 30000, options)
-      .then(response => {
+      .then(async response => {
         if (response.status === 200) {
-          resolve(response.text());
+          resolve(await response.text());
           return;
         }
 
@@ -46,24 +61,26 @@ const sites = require('./data/sites.json');
 const htmlOnlyDomains = require('./data/htmlOnly.json');
 let searchMethod = null;
 
-function getDateFromHTML(html, url, checkModified) {
+function getDateFromHTML(html, url, checkModified, dom) {
   searchMethod = null;
   let date = null;
 
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     searchMethod = 'YouTube';
-    return getYoutubeDate(html);
+    return { date: getYoutubeDate(html), dom: null };
   }
 
   // Create virtual HTML document to parse
-  html = html
-    .replace(/<style.*>\s?[^<]*<\/style>/g, '')
-    .replace(/<style/g, '<disbalestyle')
-    .replace(/<\/style /g, '</disablestyle');
+  if (!dom) {
+    html = html
+      .replace(/<style.*>\s?[^<]*<\/style>/g, '')
+      .replace(/<style/g, '<disbalestyle')
+      .replace(/<\/style /g, '</disablestyle');
 
-  const dom = new JSDOM(html);
+    dom = new JSDOM(html);
+  }
+
   const article = dom.window.document;
-
   const urlObject = new URL(url);
   const hostname = urlObject.hostname.replace(/^www./, '');
 
@@ -78,7 +95,7 @@ function getDateFromHTML(html, url, checkModified) {
 
     // String values refer to selectors
     if (typeof site === 'string') {
-      return checkSelectors(article, html, site, false, url);
+      return { date: checkSelectors(article, html, site, false, url), dom };
     }
 
     if (typeof site === 'object' && site.key) {
@@ -93,21 +110,21 @@ function getDateFromHTML(html, url, checkModified) {
         (!path || urlObject.pathname.match(new RegExp(path, 'i')))
       ) {
         if (method === 'html') {
-          return checkHTMLString(html, url, false, key);
+          return { date: checkHTMLString(html, url, false, key), dom };
         }
 
         if (method === 'selector') {
-          return checkSelectors(article, html, site, false, url);
+          return { date: checkSelectors(article, html, site, false, url), dom };
         }
 
         if (method === 'linkedData') {
-          return checkLinkedData(article, html, false, key);
+          return { date: checkLinkedData(article, html, false, key), dom };
         }
 
-        return null;
+        return { date: null, dom };
       }
     } else {
-      return null;
+      return { date: null, dom };
     }
   }
 
@@ -130,7 +147,7 @@ function getDateFromHTML(html, url, checkModified) {
 
     if (date) {
       searchMethod = 'HTML string';
-      return date;
+      return { date, dom };
     }
   }
 
@@ -143,7 +160,7 @@ function getDateFromHTML(html, url, checkModified) {
 
     if (urlDate && isRecent(urlDate, 3, url)) {
       searchMethod = 'Recent URL date';
-      return urlDate;
+      return { date: urlDate, dom };
     }
   }
 
@@ -152,7 +169,7 @@ function getDateFromHTML(html, url, checkModified) {
 
   if (date) {
     searchMethod = 'Linked data';
-    return date;
+    return { date, dom };
   }
 
   // Next try searching <meta> tags
@@ -160,7 +177,7 @@ function getDateFromHTML(html, url, checkModified) {
 
   if (date) {
     searchMethod = 'Metadata';
-    return date;
+    return { date, dom };
   }
 
   // Try checking item props and CSS selectors
@@ -168,16 +185,16 @@ function getDateFromHTML(html, url, checkModified) {
 
   if (date) {
     searchMethod = 'Selectors';
-    return date;
+    return { date, dom };
   }
 
   // if (date) return date;
   if (urlDate) {
     searchMethod = 'Older URL date';
-    return urlDate;
+    return { date: urlDate, dom };
   }
 
-  return null;
+  return { date: null, dom };
 }
 
 const jsonKeys = require('./data/jsonKeys.json');
@@ -864,10 +881,23 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
       .then(html => {
         if (!html) reject('Error fetching HTML');
 
+        const { date: publishDate, dom } = getDateFromHTML(html, url);
+
         const data = {
-          publishDate: getDateFromHTML(html, url),
-          modifyDate: checkModified ? getDateFromHTML(html, url, true) : null
+          publishDate,
+          modifyDate:
+            publishDate && checkModified
+              ? getDateFromHTML(html, url, true, dom).date
+              : null
         };
+
+        // Ensure JSDOM object is destroyed
+        if (dom && dom.window) {
+          dom.window.close();
+        }
+
+        // Avoid memory leaks from RegExp.lastMatch
+        freeRegExp();
 
         if (data.publishDate) {
           resolve(data);
@@ -881,6 +911,10 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
 
 // Find the publish date from a passed URL
 function getPublishDate(url, checkModified) {
+  if (url && url.trim().match(/\.pdf($|\?)/)) {
+    return Promise.reject('URL refers to a PDF');
+  }
+
   return new Promise((resolve, reject) => {
     try {
       fetchArticleAndParse(url, checkModified)
@@ -921,6 +955,7 @@ function innerText(el) {
 }
 
 if (process.argv[2]) {
+  shouldLogDateMethod = true;
   const checkModified = process.argv[3] !== 'false';
 
   getPublishDate(process.argv[2], checkModified)
@@ -932,6 +967,8 @@ if (process.argv[2]) {
     .catch(e => {
       console.log(`Error: ${e}`);
     });
+} else {
+  shouldLogDateMethod = false;
 }
 
 module.exports = {
