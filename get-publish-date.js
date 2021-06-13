@@ -714,9 +714,19 @@ function getMomentObject(dateString, url, ignoreLength) {
   let date = moment(dateString);
   if (isValid(date)) return date;
 
+  // Check for multiple pieces of article metadata separated by the "|" character
+  const parts = dateString.split('|');
+
+  if (parts.length > 1) {
+    for (const part of parts) {
+      date = getMomentObject(part, url, ignoreLength);
+      if (isValid(date)) return date;
+    }
+  }
+
   dateString = dateString
-    .replace(/\|/g, '')
-    .replace(/(\d+)(st|nd|rd|th)/g, '$1')
+    .replace(/(\d+)(st|nd|rd|th)/gi, '$1')
+    .replace(/^.*(from|original|published|modified)[^ ]*/i, '')
     .trim();
 
   // Try to account for strangly formatted dates
