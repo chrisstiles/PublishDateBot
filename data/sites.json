@@ -1,37 +1,38 @@
 {
-  "science20.com": "#article-info",
-  "uanews.arizona.edu": ".authoring-info .field-type-date",
-  "sciencedaily.com": "#date_posted",
+  "al-monitor.com": ".article-body time",
   "bbc.com": {
     "path": "news/video_and_audio",
     "method": "html",
     "key": "last_updated\":{\"date"
   },
-  "exit.al": ".published.updated",
-  "strath.ac.uk": {
-    "key": ".press-line time",
-    "attribute": "innerText"
-  },
-  "sciencedirect.com": {
-    "key": ["article", "dates", "Available online"],
-    "method": "linkedData"
-  },
-  "deutschlandfunk.de": ".articlehead time",
-  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
-  "muslim.co": "li[itemprop='datePublished']",
-  "msn.com": ".authortime-info time[datetime]",
-  "en.farsnews.ir": ".date-news",
-  "imeche.org": ".panel__content--fixed",
-  "quantamagazine.org": ".post__title__author-date",
   "cnn.com": "meta[name='lastmod']",
+  "deutschlandfunk.de": ".articlehead time",
+  "en.farsnews.ir": ".date-news",
+  "exit.al": ".published.updated",
+  "globalnews.ca": ".c-byline__date--pubDate",
+  "hackernoon.com": "*[class*=StoryMeta] .date",
+  "imeche.org": ".panel__content--fixed",
   "infacto.bg": "time[itemprop='datePublished']",
+  "kathmandupost.com": ".page-detail--content .updated-time",
+  "msn.com": ".authortime-info time[datetime]",
+  "muslim.co": "li[itemprop='datePublished']",
   "oaxmedia.com": {
     "key": ".s-content__header-meta",
     "attribute": "innerText"
   },
-  "globalnews.ca": ".c-byline__date--pubDate",
-  "hackernoon.com": "*[class*=StoryMeta] .date",
-  "kathmandupost.com": ".page-detail--content .updated-time",
-  "al-monitor.com": ".article-body time",
-  "thestandard.com.hk": "#content .heading"
+  "quantamagazine.org": ".post__title__author-date",
+  "science20.com": "#article-info",
+  "sciencedaily.com": "#date_posted",
+  "sciencedirect.com": {
+    "key": ["article", "dates", "Available online"],
+    "method": "linkedData"
+  },
+  "skynews.com.au": ".metadata-date",
+  "strath.ac.uk": {
+    "key": ".press-line time",
+    "attribute": "innerText"
+  },
+  "thestandard.com.hk": "#content .heading",
+  "uanews.arizona.edu": ".authoring-info .field-type-date",
+  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12"
 }
