@@ -35,6 +35,10 @@
       "units": "days"
     }
   ],
+  "submissionThreshold": {
+    "time": 2,
+    "units": "days"
+  },
   "messageThreshold": {
     "time": 6,
     "units": "months"

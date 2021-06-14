@@ -17,76 +17,6 @@ if (process.env.NODE_ENV !== 'production') {
 const clientId = process.env.REDDIT_CLIENT_ID;
 const clientSecret = process.env.REDDIT_CLIENT_SECRET;
 const refreshToken = process.env.REDDIT_REFRESH_TOKEN;
-const databaseURL = process.env.DATABASE_URL;
-
-///////////////////////
-// Database
-///////////////////////
-
-const { Client } = require('pg');
-const client = new Client({
-  connectionString: databaseURL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
-
-client.connect();
-
-function filterPreviouslyCommentedSubmissions(submissions) {
-  return new Promise((resolve, reject) => {
-    if (!submissions || !submissions.length) {
-      reject('No submissions');
-    }
-
-    const ids = [];
-    const params = [];
-    for (let i = 0; i < submissions.length; i++) {
-      ids.push(submissions[i].id);
-      params.push(`($${i + 1})`);
-    }
-
-    const queryString = `
-      SELECT post_id
-      FROM (VALUES ${params.join(',')}) V(post_id)
-      EXCEPT
-      SELECT post_id 
-      FROM comments;
-    `;
-
-    const query = {
-      text: queryString,
-      values: ids,
-      rowMode: 'array'
-    };
-
-    client
-      .query(query)
-      .then(res => {
-        const uniqueIds = res.rows.map(row => {
-          return row[0];
-        });
-
-        const uniqueSubmissions = [];
-        submissions.forEach(submission => {
-          if (uniqueIds.includes(submission.id)) {
-            uniqueSubmissions.push(submission);
-          }
-        });
-
-        resolve(uniqueSubmissions);
-      })
-      .catch(reject);
-  });
-}
-
-function recordCommentedSubmission(id) {
-  return new Promise((resolve, reject) => {
-    const queryString = 'INSERT into comments(post_id) values($1)';
-
-    client.query(queryString, [id]).then(resolve).catch(reject);
-  });
-}
 
 ///////////////////////
 // Reddit
@@ -101,6 +31,12 @@ const reddit = new snoowrap({
   refreshToken
 });
 
+reddit.config({
+  continueAfterRatelimitError: true
+});
+
+// TODO Replace remaining promise chains with async/await
+
 function getSubmissions(name) {
   const subreddit = reddit.getSubreddit(name);
 
@@ -113,7 +49,16 @@ function getSubmissions(name) {
         subreddit
           .getRising()
           .then(risingListing => {
-            const submissions = mergeListings(hotListing, risingListing);
+            const { time, units } = config.submissionThreshold;
+            const threshold = moment.utc().subtract(time, units);
+            const submissions = mergeListings(hotListing, risingListing).filter(
+              submission => {
+                return moment
+                  .utc(submission.created_utc, 'X')
+                  .isAfter(threshold);
+              }
+            );
+
             resolve(submissions);
           })
           .catch(error => {
@@ -150,37 +95,43 @@ function checkModStatus({ name, flair, flairId }) {
   });
 }
 
+// Filters submissions the bot has already replied to
+function filterSubmissions(submissions, botActivity) {
+  return !submissions || !submissions.length
+    ? []
+    : submissions.filter(submission => {
+        return !botActivity.submissionIds.includes(submission.id);
+      });
+}
+
 // Checks recent postings on a specific subreddit
 // and comments if an out of date link is found
-async function checkSubreddit(data) {
+async function checkSubreddit(data, botActivity) {
   return new Promise((resolve, reject) => {
     try {
       checkModStatus(data).then(canModerate => {
         data.canModerate = canModerate;
+
         getSubmissions(data.name).then(mergedSubmissions => {
           if (!mergedSubmissions || !mergedSubmissions.length) {
             resolve();
             return;
           }
 
-          filterPreviouslyCommentedSubmissions(mergedSubmissions)
-            .then(async submissions => {
-              Promise.map(
-                submissions,
-                submission => {
-                  return new Promise(resolve => {
-                    checkSubmission(submission, data)
-                      .then(resolve)
-                      .catch(error => {
-                        log(error);
-                        resolve();
-                      });
+          Promise.map(
+            filterSubmissions(mergedSubmissions, botActivity),
+            submission => {
+              return new Promise(resolve => {
+                checkSubmission(submission, data)
+                  .then(resolve)
+                  .catch(error => {
+                    log(error);
+                    resolve();
                   });
-                },
-                { concurrency: 3 }
-              ).then(resolve);
-            })
-            .catch(reject);
+              });
+            },
+            { concurrency: 3 }
+          ).then(resolve);
         });
       });
     } catch (error) {
@@ -231,69 +182,83 @@ function checkSubmission(submission, data) {
   });
 }
 
-function submitComment(submission, publishDate, modifyDate, data) {
-  return new Promise((resolve, reject) => {
-    const text = data.text ? ` ${data.text}` : '';
-    const today = moment(moment().format('YYYY-MM-DD'));
-    let dateText,
-      modifyText = '';
-    let relativeTime;
+async function hasPreviouslyReplied(submission) {
+  const checkParticipants = post => {
+    const participants = post.comments.map(({ author }) => author.name);
+    return participants.includes('PublishDateBot');
+  };
 
-    if (
-      !data.ignoreModified &&
-      modifyDate &&
-      modifyDate.isAfter(publishDate, 'd')
-    ) {
-      relativeTime = modifyDate.from(today);
-      dateText = `last modified ${relativeTime}`;
-      modifyText = ` and it was last updated on ${modifyDate.format(
-        'MMMM Do, YYYY'
-      )}`;
-    } else {
-      relativeTime = publishDate.from(today);
-      dateText = `originally published ${relativeTime}`;
-    }
+  // First if the bot is included in the initial list
+  // of participants to avoid unecessary API request
+  // to get the full list of post replies
+  return (
+    checkParticipants(submission) ||
+    checkParticipants(await submission.expandReplies({ depth: 1 }))
+  );
+}
 
-    // Reddit encodes URLs on their end, but certain characters
-    // are omitted so we encode those ourselves
-    const encode = str => str.replace(/\(/g, '%28').replace(/\)/g, '%29');
+async function submitComment(submission, publishDate, modifyDate, data) {
+  const hasReplied = await hasPreviouslyReplied(submission);
 
-    const feedbackUrl = [
-      'https://www.reddit.com/message/compose?to=PublishDateBot',
-      'subject=Feedback',
-      `message=${encode(submission.url)}`,
-      `u=${submission.author.name}`,
-      `d=${today.diff(publishDate, 'd')}`
-    ].join('&');
+  if (hasReplied) {
+    return;
+  }
 
-    const comment = `
-      **This article was ${dateText} and may contain out of date information.**  
-      
-      The original publication date was ${publishDate.format(
-        'MMMM Do, YYYY'
-      )}${modifyText}.${text}
-      &nbsp;  
-      &nbsp;  
-      
-      ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
-      
-      [^(Send Feedback)](${feedbackUrl})  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
-    `;
+  const text = data.text ? ` ${data.text}` : '';
+  const today = moment(moment().format('YYYY-MM-DD'));
+  let dateText,
+    modifyText = '';
+  let relativeTime;
 
-    submission
-      .reply(stripIndent(comment))
-      .then(async () => {
-        try {
-          await recordCommentedSubmission(submission.id);
-          await sendMessage(submission, relativeTime, publishDate, modifyDate);
-          await assignFlair(submission, data);
-        } catch (error) {
-          log(error);
-          resolve();
-        }
-      })
-      .catch(reject);
-  });
+  if (
+    !data.ignoreModified &&
+    modifyDate &&
+    modifyDate.isAfter(publishDate, 'd')
+  ) {
+    relativeTime = modifyDate.from(today);
+    dateText = `last modified ${relativeTime}`;
+    modifyText = ` and it was last updated on ${modifyDate.format(
+      'MMMM Do, YYYY'
+    )}`;
+  } else {
+    relativeTime = publishDate.from(today);
+    dateText = `originally published ${relativeTime}`;
+  }
+
+  // Reddit encodes URLs on their end, but certain characters
+  // are omitted so we encode those ourselves
+  const encode = str => str.replace(/\(/g, '%28').replace(/\)/g, '%29');
+
+  const feedbackUrl = [
+    'https://www.reddit.com/message/compose?to=PublishDateBot',
+    'subject=Feedback',
+    `message=${encode(submission.url)}`,
+    `u=${submission.author.name}`,
+    `d=${today.diff(publishDate, 'd')}`
+  ].join('&');
+
+  const comment = `
+    **This article was ${dateText} and may contain out of date information.**  
+    
+    The original publication date was ${publishDate.format(
+      'MMMM Do, YYYY'
+    )}${modifyText}.${text}
+    &nbsp;  
+    &nbsp;  
+    
+    ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, and with differences in time zones and date formats this may be a little off. Send me a message if you notice an error or would like this bot added to your subreddit.)
+    
+    [^(Send Feedback)](${feedbackUrl})  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
+  `;
+
+  await submission.reply(stripIndent(comment));
+
+  try {
+    await sendMessage(submission, relativeTime, publishDate, modifyDate);
+    await assignFlair(submission, data);
+  } catch (error) {
+    log(error);
+  }
 }
 
 function assignFlair(submission, data) {
@@ -431,6 +396,46 @@ function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   }
 }
 
+async function getBotActivity() {
+  const filterComments = replies => {
+    return replies
+      .filter(reply => reply.parent_id === reply.link_id)
+      .sort((a, b) => b.created_utc - a.created_utc);
+  };
+
+  const { time, units } = config.submissionThreshold;
+  const threshold = moment.utc().subtract(time + 1, units);
+  const bot = await reddit.getUser('PublishDateBot');
+
+  let comments = filterComments(await bot.getComments()) || [];
+
+  if (!comments.length) {
+    return {
+      mostRecentCommentTime: threshold,
+      submissionIds: []
+    };
+  }
+
+  const hasEnoughComments = () => {
+    if (comments.isFinished || comments.length < 2) {
+      return true;
+    }
+
+    const oldestComment = comments[comments.length - 1];
+
+    return moment.utc(oldestComment.created_utc, 'X').isBefore(threshold);
+  };
+
+  while (!hasEnoughComments()) {
+    comments = filterComments(await comments.fetchMore()) || [];
+  }
+
+  return {
+    mostRecentCommentTime: moment.utc(comments[0].created_utc, 'X'),
+    submissionIds: comments.map(comment => comment.link_id.replace(/^t\d_/, ''))
+  };
+}
+
 // Some subreddits allow older posts as long as they
 // include the date in the title in a specific format
 function hasApprovedTitle(title, regex) {
@@ -439,8 +444,9 @@ function hasApprovedTitle(title, regex) {
   return !!title.match(new RegExp(regexString, 'i'));
 }
 
-function runBot() {
+async function runBot() {
   const { subreddits = [] } = config;
+  const botActivity = await getBotActivity();
 
   Promise.map(
     subreddits,
@@ -450,7 +456,7 @@ function runBot() {
         data.units = 'days';
 
       return new Promise(resolve => {
-        checkSubreddit(data)
+        checkSubreddit(data, botActivity)
           .then(resolve)
           .catch(error => {
             log(error);
@@ -461,7 +467,6 @@ function runBot() {
     { concurrency: 1 }
   ).then(() => {
     console.log('All done!');
-    client.end();
   });
 }
 
