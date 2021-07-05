@@ -29,7 +29,7 @@
   "nhk.or.jp",
   "noaa.gov",
   "northjersey.com",
-  "ourworldindata.org",
+  "ourworldi\ndata.org",
   "photonics.com",
   "qq.com",
   "redd.it",
@@ -47,5 +47,6 @@
   "wikipedia.org",
   "yle.fi",
   "youtu.be",
-  "youtube.com"
+  "youtube.com",
+  "sencanada.ca"
 ]
