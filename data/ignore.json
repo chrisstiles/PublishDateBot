@@ -3,6 +3,7 @@
   "archive.org",
   "archive.vn",
   "b92.net",
+  "biobot.io",
   "blavity.com",
   "cbc.ca",
   "cdc.gov",
@@ -10,6 +11,7 @@
   "cj.my",
   "clarin.com",
   "discordapp.com",
+  "esa.int",
   "fandom.com",
   "film-news.co.uk",
   "filmedonstage.com",
@@ -38,6 +40,7 @@
   "reddit.com",
   "rotenburger-rundschau.de",
   "sanquin.nl",
+  "sencanada.ca",
   "shadowmap.com",
   "streamable.com",
   "svt.se",
@@ -49,7 +52,5 @@
   "wikipedia.org",
   "yle.fi",
   "youtu.be",
-  "youtube.com",
-  "sencanada.ca",
-  "esa.int"
+  "youtube.com"
 ]
