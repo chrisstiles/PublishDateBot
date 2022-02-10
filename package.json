@@ -31,7 +31,7 @@
     "lodash": "^4.17.19",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.1",
-    "node-sass": "^6.0.0",
+    "node-sass": "^7.0.0",
     "pg": "^8.6.0",
     "snoowrap": "^1.23.0",
     "strip-indent": "^3.0.0"
