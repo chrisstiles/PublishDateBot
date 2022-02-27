@@ -2,12 +2,20 @@
 // Initialize
 ///////////////////////
 
-const config = require('./bot.config');
-const Promise = require('bluebird');
-const { getPublishDate, months } = require('./get-publish-date');
-const moment = require('moment');
-const stripIndent = require('strip-indent');
-const { log } = require('./util');
+// const config = require('./bot.config');
+// const Promise = require('bluebird');
+// const { getPublishDate, months } = require('./get-publish-date');
+// const moment = require('moment');
+// const stripIndent = require('strip-indent');
+// const { log } = require('./util');
+
+import config from './bot.config.json';
+import getPublishDate from './get-publish-date';
+import months from './data/months.json';
+import Promise from 'bluebird';
+import moment from 'moment';
+import stripIndent from 'strip-indent';
+import { log } from './util';
 
 // Environment Variables
 if (process.env.NODE_ENV !== 'production') {

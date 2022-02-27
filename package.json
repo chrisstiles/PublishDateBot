@@ -1,11 +1,12 @@
 {
   "name": "publish-date-bot",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Looks for outdated articles on Reddit",
   "engines": {
-    "node": "16.2.x",
-    "npm": "7.13.x"
+    "node": "16.13.x",
+    "npm": "8.3.x"
   },
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -26,12 +27,11 @@
     "bluebird": "^3.7.2",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
-    "http-parser-js": "^0.5.3",
     "jsdom": "^16.2.1",
     "lodash": "^4.17.19",
     "moment": "^2.24.0",
-    "node-fetch": "^2.6.1",
-    "node-sass": "^6.0.0",
+    "node-fetch": "^3.2.0",
+    "node-sass": "^7.0.1",
     "pg": "^8.6.0",
     "snoowrap": "^1.23.0",
     "strip-indent": "^3.0.0"

@@ -1,10 +1,26 @@
 // process.binding('http_parser').HTTPParser =
 //   require('http-parser-js').HTTPParser;
-const Promise = require('bluebird');
-const { JSDOM } = require('jsdom');
-const { log: writeLog, fetchTimeout, freeRegExp } = require('./util');
-const moment = require('moment');
-const _ = require('lodash');
+// const Promise = require('bluebird');
+// const { JSDOM } = require('jsdom');
+// const { log: writeLog, fetchTimeout, freeRegExp } = require('./util');
+// const moment = require('moment');
+// const _ = require('lodash');
+
+import jsdom from 'jsdom';
+import moment from 'moment';
+import { get as getByKeyPath } from 'lodash';
+// import Promise from 'bluebird';
+import { log as writeLog, fetchTimeout, freeRegExp } from './util.js';
+import jsonKeys from './data/jsonKeys.json';
+import months from './data/months.json';
+import sites from './data/sites.json';
+import htmlOnlyDomains from './data/htmlOnly.json';
+import metaAttributes from './data/metaAttributes.json';
+import selectors from './data/selectors.json';
+import tlds from './data/tlds.json';
+
+const { JSDOM } = jsdom;
+
 moment.suppressDeprecationWarnings = true;
 
 ////////////////////////////
@@ -57,8 +73,8 @@ function getArticleHtml(url, shouldSetUserAgent) {
   });
 }
 
-const sites = require('./data/sites.json');
-const htmlOnlyDomains = require('./data/htmlOnly.json');
+// const sites = require('./data/sites.json');
+// const htmlOnlyDomains = require('./data/htmlOnly.json');
 let searchMethod = null;
 
 function getDateFromHTML(html, url, checkModified, dom) {
@@ -197,9 +213,6 @@ function getDateFromHTML(html, url, checkModified, dom) {
   return { date: null, dom };
 }
 
-const jsonKeys = require('./data/jsonKeys.json');
-const months = require('./data/months.json');
-
 function checkHTMLString(html, url, checkModified, key) {
   if (!html) return null;
 
@@ -324,7 +337,7 @@ function checkLinkedData(article, url, checkModified, specificKey) {
         let data = JSON.parse(node.innerHTML);
 
         if (specificKey) {
-          return getMomentObject(_.get(data, specificKey), url);
+          return getMomentObject(getByKeyPath(data, specificKey), url);
         }
 
         for (let key of arr) {
@@ -344,8 +357,6 @@ function checkLinkedData(article, url, checkModified, specificKey) {
 
   return null;
 }
-
-const metaAttributes = require('./data/metaAttributes.json');
 
 function checkMetaData(article, checkModified, url) {
   const arr = checkModified ? metaAttributes.modify : metaAttributes.publish;
@@ -367,8 +378,6 @@ function checkMetaData(article, checkModified, url) {
 
   return null;
 }
-
-const selectors = require('./data/selectors.json');
 
 function checkSelectors(article, html, site, checkModified, url) {
   const specificSelector =
@@ -542,9 +551,8 @@ function checkChildNodes(parent, url) {
 // When a date string is something like 1/2/20, we attempt
 // to guess which number is the month and which is the day.
 // We default parsing as <month>/<day>/<year>
-const tlds = require('./data/tlds.json');
 
-function getDateFromParts(nums = [], url) {
+export function getDateFromParts(nums = [], url) {
   if (!nums) {
     return null;
   }
@@ -649,7 +657,7 @@ function getDateFromParts(nums = [], url) {
   return null;
 }
 
-function getDateFromString(string, url) {
+export function getDateFromString(string, url) {
   if (!string || !string.trim()) return null;
   string = string.trim();
   let date = getMomentObject(string, url);
@@ -920,7 +928,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
 }
 
 // Find the publish date from a passed URL
-function getPublishDate(url, checkModified) {
+export default function getPublishDate(url, checkModified) {
   if (url && url.trim().match(/\.pdf($|\?)/)) {
     return Promise.reject('URL refers to a PDF');
   }
@@ -954,6 +962,8 @@ function getPublishDate(url, checkModified) {
   });
 }
 
+export { getPublishDate };
+
 // JSDOM does not include HTMLElement.innerText
 function innerText(el) {
   el = el.cloneNode(true);
@@ -980,10 +990,3 @@ if (process.argv[2]) {
 } else {
   shouldLogDateMethod = false;
 }
-
-module.exports = {
-  getPublishDate,
-  months,
-  getDateFromParts,
-  getDateFromString
-};
