@@ -1,12 +1,19 @@
-const express = require('express');
-const app = express();
-const path = require('path');
+import express from 'express';
+import compression from 'compression';
+import cors from 'cors';
+import favicon from 'serve-favicon';
+import data from './data/index.js';
 
-// Serve static landing page for Chrome extension
+const app = express();
+
+app.use(compression());
+app.use(favicon('public/images/favicon.png'));
 app.use(express.static('public'));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
+app.get('/api/data', cors(), (_, res) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.send(data);
 });
 
 const PORT = process.env.PORT || 8000;
