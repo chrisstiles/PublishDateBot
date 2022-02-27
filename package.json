@@ -8,6 +8,7 @@
   },
   "type": "module",
   "main": "index.js",
+  "exports": "./index.js",
   "scripts": {
     "start": "node index.js",
     "scss": "node-sass --watch public/css -o public/css",

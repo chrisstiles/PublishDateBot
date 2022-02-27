@@ -1,23 +1,18 @@
-// process.binding('http_parser').HTTPParser =
-//   require('http-parser-js').HTTPParser;
-// const Promise = require('bluebird');
-// const { JSDOM } = require('jsdom');
-// const { log: writeLog, fetchTimeout, freeRegExp } = require('./util');
-// const moment = require('moment');
-// const _ = require('lodash');
-
 import jsdom from 'jsdom';
 import moment from 'moment';
-import { get as getByKeyPath } from 'lodash';
-// import Promise from 'bluebird';
+import _ from 'lodash';
+import Promise from 'bluebird';
 import { log as writeLog, fetchTimeout, freeRegExp } from './util.js';
-import jsonKeys from './data/jsonKeys.json';
-import months from './data/months.json';
-import sites from './data/sites.json';
-import htmlOnlyDomains from './data/htmlOnly.json';
-import metaAttributes from './data/metaAttributes.json';
-import selectors from './data/selectors.json';
-import tlds from './data/tlds.json';
+
+import {
+  htmlOnlyDomains,
+  jsonKeys,
+  metaAttributes,
+  months,
+  selectors,
+  sites,
+  tlds
+} from './data/index.js';
 
 const { JSDOM } = jsdom;
 
@@ -73,8 +68,6 @@ function getArticleHtml(url, shouldSetUserAgent) {
   });
 }
 
-// const sites = require('./data/sites.json');
-// const htmlOnlyDomains = require('./data/htmlOnly.json');
 let searchMethod = null;
 
 function getDateFromHTML(html, url, checkModified, dom) {
@@ -337,7 +330,7 @@ function checkLinkedData(article, url, checkModified, specificKey) {
         let data = JSON.parse(node.innerHTML);
 
         if (specificKey) {
-          return getMomentObject(getByKeyPath(data, specificKey), url);
+          return getMomentObject(_.get(data, specificKey), url);
         }
 
         for (let key of arr) {

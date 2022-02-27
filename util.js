@@ -1,5 +1,8 @@
 import AbortController from 'abort-controller';
 import fetch from 'node-fetch';
+import { createRequire } from 'module';
+
+const get = createRequire(import.meta.url);
 
 export function log(message) {
   if (typeof message === 'object') {
@@ -28,4 +31,10 @@ export function delay(t, v) {
 
 export function freeRegExp() {
   /\s*/g.exec('');
+}
+
+export const config = get('./bot.config.json');
+
+export function getConfig() {
+  return get('./bot.config.json');
 }

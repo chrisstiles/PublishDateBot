@@ -2,24 +2,19 @@
 // Initialize
 ///////////////////////
 
-// const config = require('./bot.config');
-// const Promise = require('bluebird');
-// const { getPublishDate, months } = require('./get-publish-date');
-// const moment = require('moment');
-// const stripIndent = require('strip-indent');
-// const { log } = require('./util');
-
-import config from './bot.config.json';
-import getPublishDate from './get-publish-date';
-import months from './data/months.json';
+import getPublishDate from './get-publish-date.js';
+import { log, config } from './util.js';
+import { ignoreDomains } from './data/index.js';
+import { months } from './data/index.js';
 import Promise from 'bluebird';
 import moment from 'moment';
 import stripIndent from 'strip-indent';
-import { log } from './util';
+import snoowrap from 'snoowrap';
+import dotenv from 'dotenv';
 
 // Environment Variables
 if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
+  dotenv.config();
 }
 
 const clientId = process.env.REDDIT_CLIENT_ID;
@@ -31,7 +26,7 @@ const refreshToken = process.env.REDDIT_REFRESH_TOKEN;
 ///////////////////////
 
 // Set up Reddit client
-const snoowrap = require('snoowrap');
+// const snoowrap = require('snoowrap');
 const reddit = new snoowrap({
   userAgent: 'Article publish date bot (by /u/PublishDateBot)',
   clientId,
@@ -377,7 +372,7 @@ function mergeListings(listing1, listing2) {
   return submissions;
 }
 
-const ignoreDomains = require('./data/ignore.json');
+// const ignoreDomains = require('./data/ignore.json');
 
 function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   if (hasApprovedTitle(title, regex)) return false;
