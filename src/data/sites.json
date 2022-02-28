@@ -11,6 +11,7 @@
   "exit.al": ".published.updated",
   "globalnews.ca": ".c-byline__date--pubDate",
   "hackernoon.com": "*[class*=StoryMeta] .date",
+  "iihf.com": ".m-article-header .s-date",
   "imeche.org": ".panel__content--fixed",
   "infacto.bg": "time[itemprop='datePublished']",
   "kathmandupost.com": ".page-detail--content .updated-time",
