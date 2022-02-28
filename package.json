@@ -9,7 +9,7 @@
   "type": "module",
   "main": "./src/server.js",
   "scripts": {
-    "start": "node ./src/index.js",
+    "start": "node ./src/server.js",
     "scss": "node-sass --watch ./src/public/css -o ./src/public/css --output-style compressed",
     "server": "nodemon ./src/server.js",
     "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn ./src/reddit.js",
