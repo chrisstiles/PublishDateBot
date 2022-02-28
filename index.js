@@ -10,6 +10,8 @@ app.use(compression());
 app.use(favicon('public/images/favicon.png'));
 app.use(express.static('public'));
 
+app.disable('x-powered-by');
+
 app.get('/api/data', cors(), (_, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
