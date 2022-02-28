@@ -11,7 +11,6 @@ export function log(message) {
     message = message.toString();
   }
 
-  // setImmediate(() => fs.writeSync(process.stdout.fd, message + '\n'));
   setImmediate(() => process.stdout.write(message + '\n'));
 }
 
@@ -33,8 +32,8 @@ export function freeRegExp() {
   /\s*/g.exec('');
 }
 
-export const config = get('./bot.config.json');
+export const config = get('../bot.config.json');
 
 export function getConfig() {
-  return get('./bot.config.json');
+  return get('../bot.config.json');
 }

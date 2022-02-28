@@ -7,8 +7,8 @@ import data from './data/index.js';
 const app = express();
 
 app.use(compression());
-app.use(favicon('public/images/favicon.png'));
-app.use(express.static('public'));
+app.use(favicon('src/public/images/favicon.png'));
+app.use(express.static('src/public'));
 
 app.disable('x-powered-by');
 

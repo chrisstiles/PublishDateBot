@@ -1,19 +1,18 @@
 {
   "name": "publish-date-bot",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Looks for outdated articles on Reddit",
   "engines": {
     "node": "16.13.x",
     "npm": "8.3.x"
   },
   "type": "module",
-  "main": "index.js",
-  "exports": "./index.js",
+  "main": "./src/server.js",
   "scripts": {
-    "start": "node index.js",
-    "scss": "node-sass --watch public/css -o public/css --output-style compressed",
-    "server": "nodemon index.js",
-    "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn reddit.js",
+    "start": "node ./src/index.js",
+    "scss": "node-sass --watch ./src/public/css -o ./src/public/css --output-style compressed",
+    "server": "nodemon ./src/server.js",
+    "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn ./src/reddit.js",
     "preinstall": "npx npm-force-resolutions"
   },
   "nodemonConfig": {
