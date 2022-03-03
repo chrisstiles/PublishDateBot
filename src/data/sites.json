@@ -9,6 +9,7 @@
   "deutschlandfunk.de": ".articlehead time",
   "en.farsnews.ir": ".date-news",
   "exit.al": ".published.updated",
+  "garoweonline.com": ".entry-meta a",
   "globalnews.ca": ".c-byline__date--pubDate",
   "hackernoon.com": "*[class*=StoryMeta] .date",
   "iihf.com": ".m-article-header .s-date",
