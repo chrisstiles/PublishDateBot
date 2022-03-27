@@ -6,6 +6,7 @@
     "key": "last_updated\":{\"date"
   },
   "cnn.com": "meta[name='lastmod']",
+  "connexionfrance.com": "[class^=ArticleDate_articleDate]",
   "deutschlandfunk.de": ".articlehead time",
   "en.farsnews.ir": ".date-news",
   "exit.al": ".published.updated",
