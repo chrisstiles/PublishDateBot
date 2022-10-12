@@ -1,20 +1,21 @@
 import jsdom from 'jsdom';
 import moment from 'moment';
-import _ from 'lodash';
 import Promise from 'bluebird';
-import { log as writeLog, fetchTimeout, freeRegExp } from './util.js';
-
-import {
-  htmlOnlyDomains,
-  jsonKeys,
-  metaAttributes,
-  months,
-  selectors,
-  sites,
-  tlds
-} from './data/index.js';
+import cache from 'memory-cache';
+import _ from 'lodash';
+import { log as writeLog, fetchTimeout, freeRegExp, innerText, ApiError, DateNotFoundError, getError } from './util.js'; // prettier-ignore
+import { htmlOnlyDomains, jsonKeys, metaAttributes, months, selectors, sites, tlds } from './data/index.js'; // prettier-ignore
 
 const { JSDOM } = jsdom;
+const cacheDuration = 1000 * 60 * 10; // 10 minutes
+const dateLocations = {
+  ELEMENT: 'HTML Element',
+  ATTRIBUTE: 'HTML Attribute',
+  STRING: 'HTML String',
+  URL: 'Article URL',
+  DATA: 'Structured Data',
+  META: 'Meta Tag'
+};
 
 moment.suppressDeprecationWarnings = true;
 
@@ -36,35 +37,36 @@ function log(message, isErrorLog) {
 // Date Parsing
 ////////////////////////////
 
-function getArticleHtml(url, shouldSetUserAgent) {
+function getArticleHtml(url, shouldAddAdditionalHeaders) {
   return new Promise((resolve, reject) => {
     const options = {
       method: 'GET',
+      // prettier-ignore
       headers: {
-        Accept: 'text/html',
-        'Content-Type': 'text/html'
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'accept-language': 'en-US,en;q=0.9,it;q=0.8,es;q=0.7',
+        'cache-control': 'max-age=0'
       },
+      compress: true,
       insecureHTTPParser: true,
       highWaterMark: 1024 * 1024
     };
 
-    if (shouldSetUserAgent) {
-      options.headers['User-Agent'] =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36';
+    if (shouldAddAdditionalHeaders) {
+      options.headers['referrer'] = new URL(url).origin;
+      options.headers['user-agent'] =
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36';
     }
 
     fetchTimeout(url, 30000, options)
       .then(async response => {
         if (response.status === 200) {
-          resolve(await response.text());
-          return;
+          return resolve(await response.text());
         }
 
         reject(`status code ${response.status}, URL: ${url}`);
       })
-      .catch(error => {
-        reject(`${error}, ${url}`);
-      });
+      .catch(error => reject(`${error}, ${url}`));
   });
 }
 
@@ -436,15 +438,6 @@ function checkMetaData(article, checkModified, url) {
   return null;
 }
 
-const dateLocations = {
-  ELEMENT: 'HTML Element',
-  ATTRIBUTE: 'HTML Attribute',
-  STRING: 'HTML String',
-  URL: 'Article URL',
-  DATA: 'Structured Data',
-  META: 'Meta Tag'
-};
-
 function checkSelectors(article, html, site, checkModified, url) {
   const specificSelector =
     !checkModified && site
@@ -500,7 +493,7 @@ function checkSelectors(article, html, site, checkModified, url) {
           const isInnerText = site.attribute === 'innerText';
 
           const value = isInnerText
-            ? innerText(element)
+            ? textContent(element)
             : element.getAttribute(site.attribute);
 
           const location = isInnerText
@@ -535,10 +528,10 @@ function checkSelectors(article, html, site, checkModified, url) {
           }
         }
 
-        const innerText = innerText(dateElement);
+        const textContent = innerText(dateElement);
         const valueAttribute = dateElement.getAttribute('value');
-        const dateString = innerText || valueAttribute;
-        const location = innerText
+        const dateString = textContent || valueAttribute;
+        const location = textContent
           ? dateLocations.ELEMENT
           : dateLocations.ATTRIBUTE;
 
@@ -1028,39 +1021,26 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
   return new Promise((resolve, reject) => {
     getArticleHtml(url, shouldSetUserAgent)
       .then(html => {
-        if (!html) reject('Error fetching HTML');
+        if (!html) return reject('Error fetching HTML');
 
-        const {
-          date: publishDate,
-          title = null,
-          description = null,
-          dom
-        } = getDateFromHTML(html, url);
-        // const article = getDateFromHTML(html, url);
+        const article = getDateFromHTML(html, url);
+        const { date = null, title = null, description = null, dom } = article;
+        const location = date?.location?.trim() ?? null;
 
-        const location = publishDate?.location?.trim() ?? null;
-        let dateHtml = publishDate?.html?.trim() ?? null;
+        let dateHtml = date?.html?.trim() ?? null;
 
         if (dateHtml?.match(/"[^"]+": ?"[^"]+"/)) {
           dateHtml = `{ ${dateHtml.replace('":"', '": "')} }`;
         }
 
-        // let location = publishDate?.location?.trim() ?? null;
-
-        // if (location?.match(/"[^"]+": ?"[^"]+"/)) {
-        //   location = `{ ${location.replace('":"', '": "')} }`;
-        // }
-        // const { date: publishDate, dom } = article;
-
         const data = {
-          publishDate,
           title,
           description,
           location,
-          // location: publishDate?.location ?? null,
           html: dateHtml,
+          publishDate: date,
           modifyDate:
-            publishDate && checkModified
+            date && checkModified
               ? getDateFromHTML(html, url, true, dom).date
               : null
         };
@@ -1076,7 +1056,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
         if (data.publishDate) {
           resolve(data);
         } else {
-          reject(`No date found: ${url}`);
+          reject(new DateNotFoundError(url));
         }
       })
       .catch(reject);
@@ -1089,46 +1069,44 @@ export default function getPublishDate(url, checkModified) {
     return Promise.reject('URL refers to a PDF');
   }
 
+  const cachedValue = cache.get(url);
+
+  if (cachedValue) {
+    return cachedValue instanceof ApiError
+      ? Promise.reject(cachedValue)
+      : Promise.resolve(cachedValue);
+  }
+
   return new Promise((resolve, reject) => {
+    const handleSuccess = data => {
+      cache.put(url, data, cacheDuration);
+      return resolve(data);
+    };
+
+    const handleError = error => {
+      const apiError = getError(error, url);
+      cache.put(url, apiError, cacheDuration);
+      return reject(apiError);
+    };
+
     try {
       fetchArticleAndParse(url, checkModified)
-        .then(resolve)
+        .then(handleSuccess)
         .catch(() => {
           // If the first fetch fails try requesting with a user agent
           // agent set. Somtimes websites return different HTML
           // based on the user agent making the request
           fetchArticleAndParse(url, checkModified, true)
-            .then(data => resolve(data))
-            .catch(error => {
-              // Limit the length of error message to prevent memory overflow
-              const maxErrorLength = 500;
-
-              if (typeof error === 'string') {
-                error = error.substring(0, maxErrorLength);
-              } else if (error.message) {
-                error = error.message.substring(0, maxErrorLength);
-              }
-
-              reject(error);
-            });
+            .then(handleSuccess)
+            .catch(handleError);
         });
     } catch (error) {
-      reject(error);
+      return handleError(error);
     }
   });
 }
 
 export { getPublishDate };
-
-// JSDOM does not include HTMLElement.innerText
-function innerText(el) {
-  el = el.cloneNode(true);
-  el.querySelectorAll('script, style').forEach(s => s.remove());
-  return el.textContent
-    .replace(/\n\s*\n/g, '\n')
-    .replace(/  +/g, '')
-    .trim();
-}
 
 if (process.argv[2]) {
   shouldLogDateMethod = true;
@@ -1139,9 +1117,11 @@ if (process.argv[2]) {
       publishDate = publishDate ? publishDate.format('YYYY-MM-DD') : null;
       modifyDate = modifyDate ? modifyDate.format('YYYY-MM-DD') : null;
       console.log({ publishDate, modifyDate, method: searchMethod });
+      cache.clear();
     })
     .catch(e => {
       console.log(`Error: ${e}`);
+      cache.clear();
     });
 } else {
   shouldLogDateMethod = false;
