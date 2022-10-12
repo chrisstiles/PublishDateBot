@@ -8,6 +8,7 @@ import { htmlOnlyDomains, jsonKeys, metaAttributes, months, selectors, sites, tl
 
 const { JSDOM } = jsdom;
 const cacheDuration = 1000 * 60 * 10; // 10 minutes
+const maxCacheItems = 1000;
 const dateLocations = {
   ELEMENT: 'HTML Element',
   ATTRIBUTE: 'HTML Attribute',
@@ -1070,6 +1071,15 @@ export default function getPublishDate(url, checkModified) {
   }
 
   const cachedValue = cache.get(url);
+
+  if (cache.size() >= maxCacheItems) {
+    cache
+      .keys()
+      .slice(0, Math.floor(maxCacheItems / 2))
+      .forEach(key => {
+        cache.del(key);
+      });
+  }
 
   if (cachedValue) {
     return cachedValue instanceof ApiError
