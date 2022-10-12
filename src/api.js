@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import cache from 'memory-cache';
 import data from './data/index.js';
 import getPublishDate from './get-publish-date.js';
 
 const router = express.Router();
+const cacheDuration = 1000 * 60 * 10; // 10 minutes
 
 router.get('/data', cors(), (_, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -33,18 +35,27 @@ router.get('/get-date', cors(), async (req, res) => {
     });
   }
 
+  const cached = cache.get(url.href);
+
+  if (cached) {
+    return res.send(cached);
+  }
+
   try {
-    const data = await getPublishDate(url.href);
-    const { publishDate, title, description, location, html } = data;
+    const article = await getPublishDate(url.href);
+    const { publishDate, title, description, location, html } = article;
     const date = publishDate?.toISOString() ?? null;
 
-    res.send({
+    const data = {
       title,
       description,
       date,
       location,
       html
-    });
+    };
+
+    cache.put(url.href, data, cacheDuration);
+    res.send(data);
   } catch (error) {
     console.error('API error:', error);
 
