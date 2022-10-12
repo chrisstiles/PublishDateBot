@@ -92,6 +92,11 @@ function getDateFromHTML(html, url, checkModified, dom) {
   const article = dom.window.document;
   const urlObject = new URL(url);
   const hostname = urlObject.hostname.replace(/^www./, '');
+  const title = article.title?.replace(/ ?[-|][^-|]+$/, '').trim();
+  const description = article
+    .querySelector('meta[name="description"')
+    ?.getAttribute('content')
+    ?.trim();
 
   // We can add site specific methods for
   // finding publish dates. This is helpful
@@ -104,7 +109,12 @@ function getDateFromHTML(html, url, checkModified, dom) {
 
     // String values refer to selectors
     if (typeof site === 'string') {
-      return { date: checkSelectors(article, html, site, false, url), dom };
+      return {
+        date: checkSelectors(article, html, site, false, url),
+        dom,
+        title,
+        description
+      };
     }
 
     if (typeof site === 'object' && site.key) {
@@ -119,15 +129,30 @@ function getDateFromHTML(html, url, checkModified, dom) {
         (!path || urlObject.pathname.match(new RegExp(path, 'i')))
       ) {
         if (method === 'html') {
-          return { date: checkHTMLString(html, url, false, key), dom };
+          return {
+            date: checkHTMLString(html, url, false, key),
+            dom,
+            title,
+            description
+          };
         }
 
         if (method === 'selector') {
-          return { date: checkSelectors(article, html, site, false, url), dom };
+          return {
+            date: checkSelectors(article, html, site, false, url),
+            dom,
+            title,
+            description
+          };
         }
 
         if (method === 'linkedData') {
-          return { date: checkLinkedData(article, html, false, key), dom };
+          return {
+            date: checkLinkedData(article, html, false, key),
+            dom,
+            title,
+            description
+          };
         }
 
         return { date: null, dom };
@@ -156,7 +181,7 @@ function getDateFromHTML(html, url, checkModified, dom) {
 
     if (date) {
       searchMethod = 'HTML string';
-      return { date, dom };
+      return { date, dom, title, description };
     }
   }
 
@@ -169,7 +194,7 @@ function getDateFromHTML(html, url, checkModified, dom) {
 
     if (urlDate && isRecent(urlDate, 3, url)) {
       searchMethod = 'Recent URL date';
-      return { date: urlDate, dom };
+      return { date: urlDate, dom, title, description };
     }
   }
 
@@ -178,7 +203,7 @@ function getDateFromHTML(html, url, checkModified, dom) {
 
   if (date) {
     searchMethod = 'Linked data';
-    return { date, dom };
+    return { date, dom, title, description };
   }
 
   // Next try searching <meta> tags
@@ -186,7 +211,7 @@ function getDateFromHTML(html, url, checkModified, dom) {
 
   if (date) {
     searchMethod = 'Metadata';
-    return { date, dom };
+    return { date, dom, title, description };
   }
 
   // Try checking item props and CSS selectors
@@ -194,16 +219,15 @@ function getDateFromHTML(html, url, checkModified, dom) {
 
   if (date) {
     searchMethod = 'Selectors';
-    return { date, dom };
+    return { date, dom, title, description };
   }
 
-  // if (date) return date;
   if (urlDate) {
     searchMethod = 'Older URL date';
-    return { date: urlDate, dom };
+    return { date: urlDate, dom, title, description };
   }
 
-  return { date: null, dom };
+  return { date: null, dom, title, description };
 }
 
 function checkHTMLString(html, url, checkModified, key) {
@@ -243,8 +267,12 @@ function checkHTMLString(html, url, checkModified, key) {
       );
 
       if (dateArray && dateArray[1]) {
-        let date = getMomentObject(dateArray[1], url);
-        if (date) return date;
+        let date = getMomentObject(dateArray[1], url, dateLocations.STRING);
+
+        if (date) {
+          date.html = dateString;
+          return date;
+        }
       }
     }
   }
@@ -254,8 +282,12 @@ function checkHTMLString(html, url, checkModified, key) {
   dateArray = html.match(dateTest);
 
   if (dateArray && dateArray[1]) {
-    let date = getMomentObject(dateArray[1], url);
-    if (date) return date;
+    let date = getMomentObject(dateArray[1], url, dateLocations.STRING);
+
+    if (date) {
+      date.html = dateArray[1];
+      return date;
+    }
   }
 
   return null;
@@ -272,16 +304,24 @@ function checkURL(url) {
   let dateString = url.match(dateTest);
 
   if (dateString) {
-    let date = getMomentObject(dateString[0], url);
-    if (date) return date;
+    let date = getMomentObject(dateString[0], url, dateLocations.URL);
+
+    if (date) {
+      date.html = url;
+      return date;
+    }
   }
 
   const singleDigitTest = /\/(\d{8})\//;
   dateString = url.match(singleDigitTest);
 
   if (dateString) {
-    let date = getMomentObject(dateString[0], url);
-    if (date) return date;
+    let date = getMomentObject(dateString[0], url, dateLocations.URL);
+
+    if (date) {
+      date.html = url;
+      return date;
+    }
   }
 
   return null;
@@ -296,10 +336,11 @@ function getYoutubeDate(html) {
     )}) \\d{1,2}, \\d{4})(?:['"])`,
     'i'
   );
+
   const dateArray = html.match(dateTest);
 
   if (dateArray && dateArray[1]) {
-    return getMomentObject(dateArray[1]);
+    return getMomentObject(dateArray[1], null, dateLocations.STRING);
   }
 
   // Parse videos where date is like "4 hours ago"
@@ -308,10 +349,14 @@ function getYoutubeDate(html) {
   const dateDifferenceArray = html.match(dateDifferenceTest);
 
   if (dateDifferenceArray && dateDifferenceArray.length >= 3) {
-    return getDateFromRelativeTime(
+    const date = getDateFromRelativeTime(
       dateDifferenceArray[1],
       dateDifferenceArray[2]
     );
+
+    if (date) {
+      date.location = dateLocations.STRING;
+    }
   }
 
   return null;
@@ -330,13 +375,24 @@ function checkLinkedData(article, url, checkModified, specificKey) {
         let data = JSON.parse(node.innerHTML);
 
         if (specificKey) {
-          return getMomentObject(_.get(data, specificKey), url);
+          const dateString = _.get(data, specificKey);
+          const date = getMomentObject(dateString, url, dateLocations.DATA);
+
+          if (date) {
+            date.html = `{ ${specificKey}: ${dateString} }`;
+          }
+
+          return date;
         }
 
         for (let key of arr) {
           if (data[key]) {
-            let date = getMomentObject(data[key], url);
-            if (date) return date;
+            const date = getMomentObject(data[key], url, dateLocations.DATA);
+
+            if (date) {
+              date.html = `{ ${key}: ${data[key]} }`;
+              return date;
+            }
           }
         }
       } catch (e) {
@@ -364,13 +420,30 @@ function checkMetaData(article, checkModified, url) {
       meta.getAttribute('http-equiv');
 
     if (property && metaRegex.test(property)) {
-      const date = getMomentObject(meta.getAttribute('content'), url);
-      if (date) return date;
+      const date = getMomentObject(
+        meta.getAttribute('content'),
+        url,
+        dateLocations.META
+      );
+
+      if (date) {
+        date.html = meta.outerHTML;
+        return date;
+      }
     }
   }
 
   return null;
 }
+
+const dateLocations = {
+  ELEMENT: 'HTML Element',
+  ATTRIBUTE: 'HTML Attribute',
+  STRING: 'HTML String',
+  URL: 'Article URL',
+  DATA: 'Structured Data',
+  META: 'Meta Tag'
+};
 
 function checkSelectors(article, html, site, checkModified, url) {
   const specificSelector =
@@ -423,12 +496,24 @@ function checkSelectors(article, html, site, checkModified, url) {
       for (let element of elements) {
         if (site && typeof site === 'object' && site.attribute) {
           log(`Specific Attribute: ${site.attribute}`);
-          const value =
-            site.attribute === 'innerText'
-              ? innerText(element)
-              : element.getAttribute(site.attribute);
 
-          return getMomentObject(value, url, true);
+          const isInnerText = site.attribute === 'innerText';
+
+          const value = isInnerText
+            ? innerText(element)
+            : element.getAttribute(site.attribute);
+
+          const location = isInnerText
+            ? dateLocations.ELEMENT
+            : dateLocations.ATTRIBUTE;
+
+          const date = getMomentObject(value, url, location, true);
+
+          if (date) {
+            date.html = element.outerHTML;
+          }
+
+          return date;
         }
 
         const dateElement = element.querySelector('time') || element;
@@ -438,19 +523,30 @@ function checkSelectors(article, html, site, checkModified, url) {
           dateElement.getAttribute('datePublished');
 
         if (dateAttribute) {
-          const date = getMomentObject(dateAttribute, url);
+          const date = getMomentObject(
+            dateAttribute,
+            url,
+            dateLocations.ATTRIBUTE
+          );
 
           if (date) {
+            date.html = dateElement.outerHTML;
             return date;
           }
         }
 
-        const dateString =
-          innerText(dateElement) || dateElement.getAttribute('value');
-        let date = getDateFromString(dateString, url);
+        const innerText = innerText(dateElement);
+        const valueAttribute = dateElement.getAttribute('value');
+        const dateString = innerText || valueAttribute;
+        const location = innerText
+          ? dateLocations.ELEMENT
+          : dateLocations.ATTRIBUTE;
+
+        let date = getDateFromString(dateString, url, location);
 
         if (date) {
           log(`dateString: ${dateString}`);
+          date.html = dateElement.outerHTML;
           return date;
         }
 
@@ -476,18 +572,24 @@ function checkSelectors(article, html, site, checkModified, url) {
       const attributes = checkModified
         ? ['updatedate', 'modifydate', 'dt-updated', 'datetime']
         : ['pubdate', 'datetime'];
-      const dateString =
-        attributes.map(a => element.getAttribute(a)).find(d => d) ||
-        innerText(element);
 
-      let date = getDateFromString(dateString, url);
+      const dateAttribute = attributes
+        .map(a => element.getAttribute(a))
+        .find(d => d);
+      const dateString = dateAttribute || innerText(element);
+      const location = dateAttribute
+        ? dateLocations.ATTRIBUTE
+        : dateLocations.ELEMENT;
+
+      let date = getDateFromString(dateString, url, location);
 
       if (date) {
         log(`Time element dateString: ${dateString}`);
+        date.html = element.outerHTML;
         return date;
       }
 
-      date = checkChildNodes(element);
+      date = checkChildNodes(element, url);
       if (date) return date;
     }
   }
@@ -512,8 +614,16 @@ function checkSelectors(article, html, site, checkModified, url) {
     );
 
     if (elements.length === 1) {
-      let date = getDateFromString(innerText(elements[0]), url);
-      if (date) return date;
+      let date = getDateFromString(
+        innerText(elements[0]),
+        url,
+        dateLocations.ELEMENT
+      );
+
+      if (date) {
+        date.html = elements[0].outerHTML;
+        return date;
+      }
 
       date = checkChildNodes(elements[0]);
       if (date) return date;
@@ -530,10 +640,11 @@ function checkChildNodes(parent, url) {
 
   for (let i = 0; i < children.length; i++) {
     const text = children[i].textContent.trim();
-    const date = getDateFromString(text, url);
+    const date = getDateFromString(text, url, dateLocations.ELEMENT);
 
     if (date) {
       log(`Child node: ${text}`);
+      date.html = children[i].outerHTML;
       return date;
     }
   }
@@ -544,7 +655,6 @@ function checkChildNodes(parent, url) {
 // When a date string is something like 1/2/20, we attempt
 // to guess which number is the month and which is the day.
 // We default parsing as <month>/<day>/<year>
-
 export function getDateFromParts(nums = [], url) {
   if (!nums) {
     return null;
@@ -650,10 +760,10 @@ export function getDateFromParts(nums = [], url) {
   return null;
 }
 
-export function getDateFromString(string, url) {
+export function getDateFromString(string, url, location) {
   if (!string || !string.trim()) return null;
   string = string.trim();
-  let date = getMomentObject(string, url);
+  let date = getMomentObject(string, url, location);
   if (date) return date;
 
   string = string
@@ -661,16 +771,16 @@ export function getDateFromString(string, url) {
     .replace(/([-\/]\d{2,4}) .*/, '$1')
     .trim();
 
-  date = getMomentObject(string, url);
+  date = getMomentObject(string, url, location);
   if (date) return date;
 
-  date = getMomentObject(getDateFromParts(string, url));
+  date = getMomentObject(getDateFromParts(string, url), url, location);
   if (date) return date;
 
   const numberDateTest = /^\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{1,4}$/;
   let dateString = string.match(numberDateTest);
 
-  if (dateString) date = getMomentObject(dateString[0], url);
+  if (dateString) date = getMomentObject(dateString[0], url, location);
   if (date) return date;
 
   dateString = string.match(/(?:published):? (.*$)/i);
@@ -682,7 +792,7 @@ export function getDateFromString(string, url) {
     'i'
   );
   dateString = string.match(stringDateTest);
-  if (dateString) date = getMomentObject(dateString[0], url);
+  if (dateString) date = getMomentObject(dateString[0], url, location);
   if (date) return date;
 
   dateString = string
@@ -696,7 +806,7 @@ export function getDateFromString(string, url) {
     )
     .trim();
 
-  date = getMomentObject(dateString, url);
+  date = getMomentObject(dateString, url, location);
   if (date) return date;
 
   return null;
@@ -706,22 +816,38 @@ export function getDateFromString(string, url) {
 // Helpers
 ////////////////////////////
 
-function getMomentObject(dateString, url, ignoreLength) {
+function getMomentObject(
+  dateString,
+  url,
+  location = null,
+  ignoreLength = false
+) {
   if (!dateString) return null;
   if (!ignoreLength && dateString.length && dateString.length > 100) {
     return null;
   }
 
+  const addMetaData = date => {
+    date.location = location;
+    return date;
+  };
+
   let date = moment(dateString);
-  if (isValid(date)) return date;
+
+  if (isValid(date)) {
+    return addMetaData(date);
+  }
 
   // Check for multiple pieces of article metadata separated by the "|" character
   const parts = dateString.split('|');
 
   if (parts.length > 1) {
     for (const part of parts) {
-      date = getMomentObject(part, url, ignoreLength);
-      if (isValid(date)) return date;
+      date = getMomentObject(part, url, location, ignoreLength);
+
+      if (isValid(date)) {
+        return addMetaData(date);
+      }
     }
   }
 
@@ -736,7 +862,10 @@ function getMomentObject(dateString, url, ignoreLength) {
   for (let timezone of timezones) {
     if (dateString.toLowerCase().includes(timezone)) {
       date = moment(dateString.substring(0, dateString.indexOf(timezone)));
-      if (isValid(date)) return date;
+
+      if (isValid(date)) {
+        return addMetaData(date);
+      }
     }
   }
 
@@ -749,7 +878,10 @@ function getMomentObject(dateString, url, ignoreLength) {
 
   if (matchedDate) {
     date = moment(matchedDate[0]);
-    if (isValid(date)) return date;
+
+    if (isValid(date)) {
+      return addMetaData(date);
+    }
   }
 
   for (let month of months) {
@@ -760,7 +892,10 @@ function getMomentObject(dateString, url, ignoreLength) {
       const endIndex = yearIndex === -1 ? dateString.length : yearIndex + 4;
 
       date = moment(dateString.substring(startIndex, endIndex));
-      if (isValid(date)) return date;
+
+      if (isValid(date)) {
+        return addMetaData(date);
+      }
     }
   }
 
@@ -770,12 +905,15 @@ function getMomentObject(dateString, url, ignoreLength) {
 
   if (dateNumbers) {
     date = moment(dateNumbers);
-    if (isValid(date)) return date;
+
+    if (isValid(date)) {
+      return addMetaData(date);
+    }
   }
 
   // Use today's date if the string contains 'today'
   if (dateString.includes('today')) {
-    return moment();
+    return addMetaData(moment());
   }
 
   // Could not parse date from string
@@ -892,10 +1030,35 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
       .then(html => {
         if (!html) reject('Error fetching HTML');
 
-        const { date: publishDate, dom } = getDateFromHTML(html, url);
+        const {
+          date: publishDate,
+          title = null,
+          description = null,
+          dom
+        } = getDateFromHTML(html, url);
+        // const article = getDateFromHTML(html, url);
+
+        const location = publishDate?.location?.trim() ?? null;
+        let dateHtml = publishDate?.html?.trim() ?? null;
+
+        if (dateHtml?.match(/"[^"]+": ?"[^"]+"/)) {
+          dateHtml = `{ ${dateHtml.replace('":"', '": "')} }`;
+        }
+
+        // let location = publishDate?.location?.trim() ?? null;
+
+        // if (location?.match(/"[^"]+": ?"[^"]+"/)) {
+        //   location = `{ ${location.replace('":"', '": "')} }`;
+        // }
+        // const { date: publishDate, dom } = article;
 
         const data = {
           publishDate,
+          title,
+          description,
+          location,
+          // location: publishDate?.location ?? null,
+          html: dateHtml,
           modifyDate:
             publishDate && checkModified
               ? getDateFromHTML(html, url, true, dom).date
