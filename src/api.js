@@ -35,6 +35,7 @@ router.get('/get-date', cors(), async (req, res) => {
   }
 
   const response = {
+    organization: null,
     title: null,
     description: null,
     publishDate: null,

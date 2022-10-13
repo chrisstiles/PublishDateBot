@@ -89,7 +89,7 @@ function getDateFromHTML(html, url, checkModified, dom) {
   const article = dom.window.document;
 
   // Article data
-  const data = { date: null, dom, ...getArticleMetadata(article) };
+  const data = { date: null, dom, ...getArticleMetadata(article, url) };
 
   // We can add site specific methods for finding publish
   // dates. This is helpful for websites with incorrect
@@ -758,7 +758,13 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
         if (!html) return reject('Error fetching HTML');
 
         const article = getDateFromHTML(html, url);
-        const { date = null, title = null, description = null, dom } = article;
+        const {
+          date = null,
+          organization = null,
+          title = null,
+          description = null,
+          dom
+        } = article;
         const location = date?.location?.trim() ?? null;
 
         let dateHtml = date?.html?.trim() ?? null;
@@ -768,6 +774,7 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
         }
 
         const data = {
+          organization,
           title,
           description,
           location,
@@ -1040,7 +1047,7 @@ function getLinkedData(article) {
     .flat();
 }
 
-function getArticleMetadata(article) {
+function getArticleMetadata(article, url) {
   let organization = null;
   let title = null;
   let description = null;
@@ -1068,7 +1075,7 @@ function getArticleMetadata(article) {
   organization ??=
     article.querySelector('meta[property="og:site_name"]')?.content ??
     article.querySelector('meta[property="twitter:title"]')?.content ??
-    article.title.match(/ ?[-|]([^-|]+)$/)?.[1] ??
+    new URL(url).hostname ??
     null;
 
   title ??=
