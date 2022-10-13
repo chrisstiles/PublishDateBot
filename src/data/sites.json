@@ -35,6 +35,9 @@
     "key": ".press-line time",
     "attribute": "innerText"
   },
+  "talkingpointsmemo.com": {
+    "method": "linkedData"
+  },
   "thestandard.com.hk": "#content .heading",
   "uanews.arizona.edu": ".authoring-info .field-type-date",
   "volusiasheriff.org": ".ct-pageWrapper .col-sm-12"

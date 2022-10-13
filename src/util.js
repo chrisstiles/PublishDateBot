@@ -42,6 +42,8 @@ export function getConfig() {
 
 // JSDOM does not include HTMLElement.innerText
 export function innerText(el) {
+  if (!el) return '';
+
   el = el.cloneNode(true);
   el.querySelectorAll('script, style').forEach(s => s.remove());
 
