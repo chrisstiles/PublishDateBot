@@ -1,6 +1,7 @@
 import AbortController from 'abort-controller';
 import fetch from 'node-fetch';
 import { createRequire } from 'module';
+import _ from 'lodash';
 
 const get = createRequire(import.meta.url);
 
@@ -62,8 +63,12 @@ export class ApiError {
 }
 
 export class DateNotFoundError extends ApiError {
-  constructor(url) {
+  constructor(url, metadata) {
     super(url, 'No date found', 'not-found');
+
+    if (_.isPlainObject(metadata)) {
+      this.metadata = metadata;
+    }
   }
 }
 

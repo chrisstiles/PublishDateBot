@@ -797,7 +797,9 @@ function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
         if (data.publishDate) {
           resolve(data);
         } else {
-          reject(new DateNotFoundError(url));
+          reject(
+            new DateNotFoundError(url, { organization, title, description })
+          );
         }
       })
       .catch(reject);
@@ -1073,11 +1075,13 @@ function getArticleMetadata(article, url) {
   }
 
   // Fallbacks if values were not found in linked data
-  organization ??=
+  organization ??= (
     article.querySelector('meta[property="og:site_name"]')?.content ??
     article.querySelector('meta[property="twitter:title"]')?.content ??
+    article.querySelector('meta[name="application-name"]')?.content ??
     new URL(url).hostname ??
-    null;
+    null
+  )?.trim();
 
   title ??=
     article.querySelector('meta[property="og:title"]')?.content ??
@@ -1085,6 +1089,13 @@ function getArticleMetadata(article, url) {
     innerText(article.querySelector('article h1')) ??
     article.title?.replace(/ ?[-|][^-|]+$/, '') ??
     null;
+
+  if (organization && title && organization !== title) {
+    const regex = new RegExp(`^${organization} [-|]|[-|] ${organization}$`);
+    title = title.replace(regex, '').trim();
+  }
+
+  console.log(description);
 
   description ??=
     article.querySelector('meta[property="og:description"]')?.content ??

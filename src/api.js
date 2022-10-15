@@ -1,8 +1,9 @@
-import express from 'express';
-import cors from 'cors';
 import data from './data/index.js';
 import getPublishDate from './get-publish-date.js';
-import { ApiError } from './util.js';
+import { ApiError, DateNotFoundError } from './util.js';
+import express from 'express';
+import cors from 'cors';
+import _ from 'lodash';
 
 const router = express.Router();
 
@@ -49,7 +50,7 @@ router.get('/get-date', cors(), async (req, res) => {
   try {
     const data = (await getPublishDate(url.href, true)) ?? {};
 
-    return res.send(
+    return res.json(
       Object.assign(response, {
         ...data,
         publishDate: data.publishDate?.toISOString() ?? null,
@@ -59,12 +60,16 @@ router.get('/get-date', cors(), async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    return res.send(
-      Object.assign(response, {
-        error: 'Publish date not found',
-        errorType: error instanceof ApiError ? error.type : 'server'
-      })
-    );
+    const data = Object.assign(response, {
+      error: 'Publish date not found',
+      errorType: error instanceof ApiError ? error.type : 'server'
+    });
+
+    if (error instanceof DateNotFoundError && _.isPlainObject(error.metadata)) {
+      Object.assign(data, error.metadata);
+    }
+
+    return res.json(data);
   }
 });
 
