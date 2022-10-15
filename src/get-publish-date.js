@@ -1026,6 +1026,7 @@ function formatDateJson(key, value, date) {
   return (value ? `{ "${key}": "${value}" }` : `{ ${key} }`)
     .replace(/^{[^"]+/g, '{ ')
     .replace(/([^"])+}$/g, '$1 }')
+    .replace(/":([^ ])/g, '": $1')
     .replace(/ {2,}/g, ' ');
 }
 
