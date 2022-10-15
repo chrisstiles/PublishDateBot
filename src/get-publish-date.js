@@ -1095,8 +1095,6 @@ function getArticleMetadata(article, url) {
     title = title.replace(regex, '').trim();
   }
 
-  console.log(description);
-
   description ??=
     article.querySelector('meta[property="og:description"]')?.content ??
     article.querySelector('meta[property="twitter:description"]')?.content ??

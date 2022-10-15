@@ -50,6 +50,14 @@ router.get('/get-date', cors(), async (req, res) => {
   try {
     const data = (await getPublishDate(url.href, true)) ?? {};
 
+    if (
+      data.publishDate &&
+      data.modifyDate &&
+      !data.modifyDate.isAfter(data.publishDate, 'd')
+    ) {
+      data.modifyDate = null;
+    }
+
     return res.json(
       Object.assign(response, {
         ...data,
