@@ -38,6 +38,11 @@
     "node-sass": "^7.0.1",
     "npm": "^8.5.2",
     "pg": "^8.6.0",
+    "puppeteer": "^19.0.0",
+    "puppeteer-extra": "^3.3.4",
+    "puppeteer-extra-plugin-adblocker": "^2.13.5",
+    "puppeteer-extra-plugin-block-resources": "^2.4.2",
+    "puppeteer-extra-plugin-stealth": "^2.11.1",
     "serve-favicon": "^2.5.0",
     "snoowrap": "^1.23.0",
     "strip-indent": "^3.0.0"
