@@ -42,7 +42,7 @@ export default class DateParser {
     if (this.enablePuppeteer && !this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
-        args: ['--disable-setuid-sandbox', '--no-sandbox']
+        args: ['--no-sandbox']
       });
     }
 
