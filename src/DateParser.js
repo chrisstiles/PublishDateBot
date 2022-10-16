@@ -17,21 +17,29 @@ puppeteer.use(
 
 const cacheDuration = 1000 * 60 * 10; // 10 minutes
 const maxCacheItems = 1000;
+const fetchMethods = {
+  FETCH: 'fetch',
+  PUPPETEER: 'puppeteer'
+};
 
 export default class DateParser {
   constructor(opts = {}) {
     _.defaults(opts, {
-      usePuppeteer: true,
-      puppeteerDelay: 3000
+      enablePuppeteer: true,
+      puppeteerDelay: 3000,
+      disableCache: false,
+      method: null
     });
 
     this.browser = null;
-    this.usePuppeteer = opts.usePuppeteer;
+    this.enablePuppeteer = opts.enablePuppeteer;
     this.puppeteerDelay = opts.puppeteerDelay;
+    this.disableCache = opts.disableCache;
+    this.method = opts.method;
   }
 
   async launch() {
-    if (this.usePuppeteer && !this.browser) {
+    if (this.enablePuppeteer && !this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
         args: ['--disable-setuid-sandbox', '--no-sandbox']
@@ -46,33 +54,51 @@ export default class DateParser {
       return Promise.reject('URL refers to a PDF');
     }
 
-    const cachedValue = cache.get(url);
+    if (!this.disableCache) {
+      const cachedValue = cache.get(url);
 
-    if (cache.size() >= maxCacheItems) {
-      cache
-        .keys()
-        .slice(0, Math.floor(maxCacheItems / 2))
-        .forEach(key => {
-          cache.del(key);
-        });
-    }
+      if (cache.size() >= maxCacheItems) {
+        cache
+          .keys()
+          .slice(0, Math.floor(maxCacheItems / 2))
+          .forEach(key => {
+            cache.del(key);
+          });
+      }
 
-    if (cachedValue) {
-      return cachedValue instanceof ApiError
-        ? Promise.reject(cachedValue)
-        : Promise.resolve(cachedValue);
+      if (cachedValue) {
+        return cachedValue instanceof ApiError
+          ? Promise.reject(cachedValue)
+          : Promise.resolve(cachedValue);
+      }
     }
 
     try {
       const html = await this.loadPage(url);
       const data = await getPublishDate(url, checkModified, html);
-      cache.put(url, data, cacheDuration);
+
+      if (!this.disableCache) {
+        cache.put(url, data, cacheDuration);
+      }
+
       return data;
     } catch (error) {
       const apiError = getError(error, url);
-      cache.put(url, apiError, cacheDuration);
+
+      if (!this.disableCache) {
+        cache.put(url, apiError, cacheDuration);
+      }
+
       return Promise.reject(apiError);
     }
+  }
+
+  get forcePuppeteer() {
+    return this.enablePuppeteer && this.method === fetchMethods.PUPPETEER;
+  }
+
+  get forceFetch() {
+    return this.method === fetchMethods.FETCH;
   }
 
   // It is usually faster to get an article's HTML using
@@ -81,13 +107,23 @@ export default class DateParser {
   async loadPage(url) {
     // We cache whichever method is successful
     // and use it for subsequent requests
-    const cacheKey = `fetchMethod:${new URL(url).hostname}`;
-    let fetchMethod = cache.get(cacheKey);
+    const cacheKey = `fetchMethod-${new URL(url).hostname}`;
 
-    if (this.usePuppeteer && fetchMethod === 'puppeteer') {
-      return this.getPageWithPuppeteer(url);
-    } else if (fetchMethod === 'fetch') {
-      return fetchArticle(url, true);
+    if (!this.disableCache || this.forcePuppeteer || this.forceFetch) {
+      const fetchMethod = cache.get(cacheKey);
+      const isPuppeteer = fetchMethod === fetchMethods.PUPPETEER;
+      const isFetch = fetchMethod === fetchMethods.FETCH;
+
+      if (
+        this.forcePuppeteer ||
+        (this.enablePuppeteer && isPuppeteer && !isFetch)
+      ) {
+        return this.getPageWithPuppeteer(url);
+      }
+
+      if (this.forceFetch || isFetch) {
+        return fetchArticle(url, true);
+      }
     }
 
     const controller = new AbortController();
@@ -99,7 +135,11 @@ export default class DateParser {
           try {
             const html = await this.getPageWithPuppeteer(url);
             controller.abort();
-            cache.put(cacheKey, 'puppeteer', cacheDuration);
+
+            if (!this.disableCache) {
+              cache.put(cacheKey, 'puppeteer', cacheDuration);
+            }
+
             resolve(html);
           } catch (error) {
             reject(error);
@@ -109,15 +149,20 @@ export default class DateParser {
     };
 
     const getWithFetch = async () => {
+      console.log('Starting fetch', url);
       const html = await fetchArticle(url, true, controller);
       clearTimeout(puppeteerTimeout);
-      cache.put(cacheKey, 'puppeteer', cacheDuration);
+
+      if (!this.disableCache) {
+        cache.put(cacheKey, 'fetch', cacheDuration);
+      }
+
       return html;
     };
 
     try {
       const promises = [getWithFetch()];
-      if (this.usePuppeteer) promises.push(getWithPuppeteer());
+      if (this.enablePuppeteer) promises.push(getWithPuppeteer());
       return await Promise.any(promises);
     } catch {
       return Promise.reject('Error loading page');
@@ -125,11 +170,11 @@ export default class DateParser {
   }
 
   async getPageWithPuppeteer(url) {
-    if (!this.usePuppeteer) {
+    if (!this.enablePuppeteer) {
       return Promise.reject('Puppeteer is disabled');
     }
 
-    console.log('Using puppeteer', url);
+    console.log('Starting puppeteer', url);
     await this.launch();
     const page = await this.browser.newPage();
 
@@ -160,6 +205,6 @@ export default class DateParser {
   }
 
   clearCache() {
-    cache.clear();
+    if (!this.disableCache) cache.clear();
   }
 }

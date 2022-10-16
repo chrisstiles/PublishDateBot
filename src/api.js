@@ -47,7 +47,12 @@ router.get('/get-date', cors(), async (req, res) => {
     errorType: null
   };
 
-  const parser = new DateParser({ puppeteerDelay: 300 });
+  const { cache, method } = req.query;
+  const parser = new DateParser({
+    puppeteerDelay: 300,
+    disableCache: cache === 'false',
+    method: method || null
+  });
 
   try {
     const data = (await parser.get(url.href, true)) ?? {};

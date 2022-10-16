@@ -13,7 +13,7 @@ import snoowrap from 'snoowrap';
 import dotenv from 'dotenv';
 
 const parser = new DateParser({
-  usePuppeteer: false
+  enablePuppeteer: false
 });
 
 // Environment Variables
