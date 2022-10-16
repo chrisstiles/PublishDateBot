@@ -1,5 +1,5 @@
 import { getPublishDate, fetchArticle } from './get-publish-date.js';
-import { ApiError, getError } from './util.js';
+import { ApiError, getError, getSiteMetadata } from './util.js';
 import cache from 'memory-cache';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -28,7 +28,8 @@ export default class DateParser {
       enablePuppeteer: true,
       puppeteerDelay: 3000,
       disableCache: false,
-      method: null
+      method: null,
+      findMetadata: false
     });
 
     this.browser = null;
@@ -36,6 +37,7 @@ export default class DateParser {
     this.puppeteerDelay = opts.puppeteerDelay;
     this.disableCache = opts.disableCache;
     this.method = opts.method;
+    this.findMetadata = opts.findMetadata;
   }
 
   async launch() {
@@ -75,7 +77,12 @@ export default class DateParser {
 
     try {
       const html = await this.loadPage(url);
-      const data = await getPublishDate(url, checkModified, html);
+      const data = await getPublishDate(
+        url,
+        checkModified,
+        html,
+        this.findMetadata
+      );
 
       if (!this.disableCache) {
         cache.put(url, data, cacheDuration);
@@ -108,20 +115,27 @@ export default class DateParser {
     // We cache whichever method is successful
     // and use it for subsequent requests
     const cacheKey = `fetchMethod-${new URL(url).hostname}`;
+    const { fetchWith } = getSiteMetadata(url);
 
-    if (!this.disableCache || this.forcePuppeteer || this.forceFetch) {
-      const fetchMethod = cache.get(cacheKey);
-      const isPuppeteer = fetchMethod === fetchMethods.PUPPETEER;
-      const isFetch = fetchMethod === fetchMethods.FETCH;
+    const forcePuppeteer =
+      this.enablePuppeteer &&
+      !this.forceFetch &&
+      (this.forcePuppeteer || fetchWith === fetchMethods.PUPPETEER);
 
-      if (
-        this.forcePuppeteer ||
-        (this.enablePuppeteer && isPuppeteer && !isFetch)
-      ) {
+    const forceFetch = this.forceFetch || fetchWith === fetchMethods.FETCH;
+
+    if (!this.disableCache || forcePuppeteer || forceFetch) {
+      const cachedMethod = cache.get(cacheKey);
+      const isPuppeteer = cachedMethod === fetchMethods.PUPPETEER;
+      const isFetch = cachedMethod === fetchMethods.FETCH;
+
+      if (forcePuppeteer || (this.enablePuppeteer && isPuppeteer && !isFetch)) {
+        if (!cachedMethod) console.log('Force puppeteer', url);
         return this.getPageWithPuppeteer(url);
       }
 
-      if (this.forceFetch || isFetch) {
+      if (forceFetch || isFetch) {
+        if (!cachedMethod) console.log('Force fetch', url);
         return fetchArticle(url, true);
       }
     }
@@ -149,7 +163,6 @@ export default class DateParser {
     };
 
     const getWithFetch = async () => {
-      console.log('Starting fetch', url);
       const html = await fetchArticle(url, true, controller);
       clearTimeout(puppeteerTimeout);
 
@@ -174,7 +187,6 @@ export default class DateParser {
       return Promise.reject('Puppeteer is disabled');
     }
 
-    console.log('Starting puppeteer', url);
     await this.launch();
     const page = await this.browser.newPage();
 

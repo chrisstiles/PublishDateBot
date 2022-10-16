@@ -6,6 +6,7 @@
     "article-date",
     "article-dateline",
     "article-info",
+    "article-time",
     "article-meta .posted",
     "article-source",
     "article__date",

@@ -3,14 +3,31 @@ import { hrtime } from 'node:process';
 import jsdom from 'jsdom';
 import moment from 'moment';
 import _ from 'lodash';
-import { log as writeLog, fetchTimeout, freeRegExp, innerText, DateNotFoundError } from './util.js'; // prettier-ignore
-import { htmlOnlyDomains, jsonKeys, metaAttributes, months, selectors, sites, tlds } from './data/index.js'; // prettier-ignore
+import { decode } from 'html-entities';
+import {
+  fetchTimeout,
+  freeRegExp,
+  innerText,
+  getElementHtml,
+  DateNotFoundError,
+  getSiteConfig,
+  getSiteMetadata
+} from './util.js';
+import {
+  htmlOnlyDomains,
+  jsonKeys,
+  metaAttributes,
+  months,
+  selectors,
+  tlds
+} from './data/index.js';
 
 const { JSDOM } = jsdom;
 const dateLocations = {
   ELEMENT: 'HTML Element',
   ATTRIBUTE: 'HTML Attribute',
-  STRING: 'HTML String',
+  HTML: 'HTML String',
+  JSON: 'JSON String',
   URL: 'Article URL',
   DATA: 'Structured Data',
   META: 'Meta Tag'
@@ -26,6 +43,7 @@ export default async function getPublishDate(
   url,
   checkModified,
   html,
+  findMetadata,
   attemptFetch = true
 ) {
   if (!html && attemptFetch) html = await fetchArticle(url);
@@ -37,19 +55,20 @@ export default async function getPublishDate(
     title = null,
     description = null,
     dom
-  } = getDateFromHTML(html, url);
+  } = getDateFromHTML(html, url, false, null, findMetadata);
 
-  const location = publishDate?.location?.trim() ?? null;
   const modifyDate =
     publishDate && checkModified
-      ? getDateFromHTML(html, url, true, dom).date
+      ? getDateFromHTML(html, url, true, dom, findMetadata).date
       : null;
 
   let dateHtml = publishDate?.html?.trim() ?? null;
 
   if (!publishDate?.hasFormattedJson && dateHtml?.match(/"[^"]+": ?"[^"]+"/)) {
-    dateHtml = formatDateJson(dateHtml);
+    dateHtml = formatDateJson(dateHtml, null, publishDate);
   }
+
+  const location = publishDate?.location?.trim() ?? null;
 
   const data = {
     publishDate,
@@ -104,7 +123,7 @@ export async function fetchArticle(
   }
 
   try {
-    const response = await fetchTimeout(url, 10000, options);
+    const response = await fetchTimeout(url, 30000, options);
 
     if (response.status === 200) return await response.text();
     if (!shouldAddAdditionalHeaders && !controller?.signal.aborted) {
@@ -127,24 +146,10 @@ export async function fetchArticle(
 }
 
 ////////////////////////////
-// Logging
-////////////////////////////
-
-// Only log messages for successful date parsing
-// when this script is called directly
-let shouldLogDateMethod = false;
-
-function log(message, isErrorLog) {
-  if (isErrorLog || shouldLogDateMethod) {
-    writeLog(message);
-  }
-}
-
-////////////////////////////
 // Date Parsing
 ////////////////////////////
 
-export function getDateFromHTML(html, url, checkModified, dom) {
+export function getDateFromHTML(html, url, checkModified, dom, findMetadata) {
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     return { date: getYoutubeDate(html), dom: null };
   }
@@ -162,16 +167,24 @@ export function getDateFromHTML(html, url, checkModified, dom) {
   const article = dom.window.document;
 
   // Article data
-  const data = { date: null, dom, ...getArticleMetadata(article, url) };
+  const data = { date: null, dom };
+
+  if (findMetadata) {
+    Object.assign(data, getArticleMetadata(article, url));
+  }
 
   // We can add site specific methods for finding publish
   // dates. This is helpful for websites with incorrect
   // or inconsistent ways of displaying publish dates
   const urlObject = new URL(url);
   const hostname = urlObject.hostname.replace(/^www./, '');
-  const site = sites[hostname];
+  const site = getSiteConfig(urlObject);
 
-  if (site && !checkModified) {
+  // Ignore site config it only contains metadata
+  const ignoreSiteConfig =
+    typeof site === 'object' && Object.keys(site).every(k => k === 'metadata');
+
+  if (site && !checkModified && !ignoreSiteConfig) {
     // String values refer to selectors
     if (typeof site === 'string') {
       data.date = checkSelectors(article, html, site, false, url);
@@ -291,7 +304,7 @@ function checkHTMLString(html, url, checkModified, key) {
       );
 
       if (dateArray && dateArray[1]) {
-        let date = getMomentObject(dateArray[1], url, dateLocations.STRING);
+        let date = getMomentObject(dateArray[1], url, dateLocations.HTML);
 
         if (date) {
           date.html = dateString;
@@ -306,7 +319,7 @@ function checkHTMLString(html, url, checkModified, key) {
   dateArray = html.match(dateTest);
 
   if (dateArray && dateArray[1]) {
-    let date = getMomentObject(dateArray[1], url, dateLocations.STRING);
+    let date = getMomentObject(dateArray[1], url, dateLocations.HTML);
 
     if (date) {
       date.html = dateArray[1];
@@ -364,7 +377,7 @@ function getYoutubeDate(html) {
   const dateArray = html.match(dateTest);
 
   if (dateArray && dateArray[1]) {
-    return getMomentObject(dateArray[1], null, dateLocations.STRING);
+    return getMomentObject(dateArray[1], null, dateLocations.HTML);
   }
 
   // Parse videos where date is like "4 hours ago"
@@ -379,7 +392,7 @@ function getYoutubeDate(html) {
     );
 
     if (date) {
-      date.location = dateLocations.STRING;
+      date.location = dateLocations.HTML;
     }
   }
 
@@ -450,7 +463,7 @@ function checkMetaData(article, checkModified, url) {
           }
         });
 
-        date.html = meta.outerHTML;
+        date.html = getElementHtml(meta, true);
         return date;
       }
     }
@@ -522,7 +535,7 @@ function checkSelectors(article, html, site, checkModified, url) {
           const date = getMomentObject(value, url, location, true);
 
           if (date) {
-            date.html = element.outerHTML;
+            date.html = getElementHtml(dateElement, !isInnerText);
           }
 
           return date;
@@ -542,7 +555,7 @@ function checkSelectors(article, html, site, checkModified, url) {
           );
 
           if (date) {
-            date.html = dateElement.outerHTML;
+            date.html = getElementHtml(dateElement, true);
             return date;
           }
         }
@@ -557,8 +570,7 @@ function checkSelectors(article, html, site, checkModified, url) {
         let date = getDateFromString(dateString, url, location);
 
         if (date) {
-          log(`dateString: ${dateString}`);
-          date.html = dateElement.outerHTML;
+          date.html = getElementHtml(dateElement, !textContent);
           return date;
         }
 
@@ -596,8 +608,7 @@ function checkSelectors(article, html, site, checkModified, url) {
       let date = getDateFromString(dateString, url, location);
 
       if (date) {
-        log(`Time element dateString: ${dateString}`);
-        date.html = element.outerHTML;
+        date.html = getElementHtml(element, dateAttribute);
         return date;
       }
 
@@ -633,7 +644,7 @@ function checkSelectors(article, html, site, checkModified, url) {
       );
 
       if (date) {
-        date.html = elements[0].outerHTML;
+        date.html = getElementHtml(elements[0], true);
         return date;
       }
 
@@ -651,12 +662,12 @@ function checkChildNodes(parent, url) {
   const children = parent.childNodes;
 
   for (let i = 0; i < children.length; i++) {
-    const text = children[i].textContent.trim();
+    const element = children[i];
+    const text = element.textContent.trim();
     const date = getDateFromString(text, url, dateLocations.ELEMENT);
 
     if (date) {
-      log(`Child node: ${text}`);
-      date.html = children[i].outerHTML;
+      date.html = getElementHtml(element);
       return date;
     }
   }
@@ -1041,6 +1052,10 @@ function formatDateJson(key, value, date) {
   if (!key) return null;
   if (date) date.hasFormattedJson = true;
 
+  if (date?.location === dateLocations.HTML) {
+    date.location = dateLocations.JSON;
+  }
+
   return (value ? `{ "${key}": "${value}" }` : `{ ${key} }`)
     .replace(/^{[^"]+/g, '{ ')
     .replace(/([^"])+}$/g, '$1 }')
@@ -1067,9 +1082,15 @@ function getLinkedData(article) {
 }
 
 function getArticleMetadata(article, url) {
-  let organization = null;
-  let title = null;
-  let description = null;
+  let {
+    organization = null,
+    title = null,
+    description = null
+  } = getSiteMetadata(url);
+
+  if (organization && title && description) {
+    return { organization, title, description };
+  }
 
   const linkedData = getLinkedData(article);
 
@@ -1118,9 +1139,9 @@ function getArticleMetadata(article, url) {
     null;
 
   return {
-    organization: organization?.trim(),
-    title: title?.trim(),
-    description: description?.trim()
+    organization: decode(organization?.trim()) || null,
+    title: decode(title?.trim()) || null,
+    description: decode(description?.trim()) || null
   };
 }
 
@@ -1131,7 +1152,6 @@ function getArticleMetadata(article, url) {
 if (process.argv[2]) {
   const start = hrtime.bigint();
   const checkModified = process.argv[3] !== 'false';
-  shouldLogDateMethod = true;
 
   (async () => {
     const parser = new DateParser();
@@ -1157,6 +1177,4 @@ if (process.argv[2]) {
 
     await parser.close(true);
   })();
-} else {
-  shouldLogDateMethod = false;
 }

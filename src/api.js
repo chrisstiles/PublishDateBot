@@ -4,6 +4,7 @@ import { ApiError, DateNotFoundError } from './util.js';
 import express from 'express';
 import cors from 'cors';
 import _ from 'lodash';
+import prettier from 'prettier';
 
 const router = express.Router();
 
@@ -49,6 +50,7 @@ router.get('/get-date', cors(), async (req, res) => {
 
   const { cache, method } = req.query;
   const parser = new DateParser({
+    findMetadata: true,
     puppeteerDelay: 300,
     disableCache: cache === 'false',
     method: method || null
@@ -66,6 +68,15 @@ router.get('/get-date', cors(), async (req, res) => {
     }
 
     parser.close();
+
+    // Format outputted HTML
+    if (data.html) {
+      data.html = prettier.format(data.html, {
+        parser: 'html',
+        printWidth: 52,
+        htmlWhitespaceSensitivity: 'ignore'
+      });
+    }
 
     return res.json(
       Object.assign(response, {

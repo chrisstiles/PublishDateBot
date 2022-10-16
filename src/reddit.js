@@ -1,7 +1,3 @@
-///////////////////////
-// Initialize
-///////////////////////
-
 import DateParser from './DateParser.js';
 import { log, config } from './util.js';
 import { ignoreDomains } from './data/index.js';
@@ -11,6 +7,10 @@ import moment from 'moment';
 import stripIndent from 'strip-indent';
 import snoowrap from 'snoowrap';
 import dotenv from 'dotenv';
+
+///////////////////////
+// Initialize
+///////////////////////
 
 const parser = new DateParser({
   enablePuppeteer: false

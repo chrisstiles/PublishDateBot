@@ -1,3 +1,4 @@
+import { sites } from './data/index.js';
 import AbortController from 'abort-controller';
 import fetch from 'node-fetch';
 import { createRequire } from 'module';
@@ -23,6 +24,7 @@ export function fetchTimeout(url, ms, { signal, ...options } = {}) {
   const promise = fetch(url, { signal: controller.signal, ...options });
   if (signal) {
     if (signal.aborted) controller.abort();
+
     signal.addEventListener('abort', () => {
       controller.abort();
       clearTimeout(timeout);
@@ -81,9 +83,36 @@ export class DateNotFoundError extends ApiError {
 export function getError(error, url) {
   if (error instanceof ApiError) return error;
 
-  const maxErrorLength = 500;
+  const maxErrorLength = 800;
   const message =
     (typeof error === 'string' ? error : error.message)?.trim() || 'API error';
 
   return new ApiError(url, message.substring(0, maxErrorLength));
+}
+
+export function getSiteConfig(url) {
+  const { hostname } = new URL(url);
+  return sites[hostname.replace(/^www./, '')];
+}
+
+export function getSiteMetadata(url) {
+  return getSiteConfig(url)?.metadata ?? {};
+}
+
+export function getElementHtml(el, isAttribute) {
+  if (!el) return null;
+  if (typeof el === 'string') return el.trim();
+  if (isAttribute) return el.outerHTML;
+
+  Array.from(el.children).forEach(child => {
+    if (!innerText(child)) {
+      el.removeChild(child);
+    }
+  });
+
+  if (!el.children.length && el.outerHTML.length >= 52) {
+    el.innerHTML = `\n${el.innerHTML}\n`;
+  }
+
+  return el.outerHTML;
 }

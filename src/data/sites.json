@@ -23,6 +23,11 @@
     "key": ".s-content__header-meta",
     "attribute": "innerText"
   },
+  "ptinews.com": {
+    "metadata": {
+      "organization": "Press Trust of India"
+    }
+  },
   "quantamagazine.org": ".post__title__author-date",
   "science20.com": "#article-info",
   "sciencedaily.com": "#date_posted",
@@ -40,5 +45,10 @@
   },
   "thestandard.com.hk": "#content .heading",
   "uanews.arizona.edu": ".authoring-info .field-type-date",
-  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12"
+  "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
+  "washingtonpost.com": {
+    "metadata": {
+      "fetchWith": "puppeteer"
+    }
+  }
 }
