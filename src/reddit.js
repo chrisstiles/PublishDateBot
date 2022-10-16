@@ -30,7 +30,6 @@ const refreshToken = process.env.REDDIT_REFRESH_TOKEN;
 ///////////////////////
 
 // Set up Reddit client
-// const snoowrap = require('snoowrap');
 const reddit = new snoowrap({
   userAgent: 'Article publish date bot (by /u/PublishDateBot)',
   clientId,
