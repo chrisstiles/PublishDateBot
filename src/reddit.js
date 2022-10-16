@@ -2,7 +2,7 @@
 // Initialize
 ///////////////////////
 
-import getPublishDate from './get-publish-date.js';
+import DateParser from './DateParser.js';
 import { log, config } from './util.js';
 import { ignoreDomains } from './data/index.js';
 import { months } from './data/index.js';
@@ -11,6 +11,10 @@ import moment from 'moment';
 import stripIndent from 'strip-indent';
 import snoowrap from 'snoowrap';
 import dotenv from 'dotenv';
+
+const parser = new DateParser({
+  usePuppeteer: false
+});
 
 // Environment Variables
 if (process.env.NODE_ENV !== 'production') {
@@ -150,7 +154,8 @@ function checkSubmission(submission, data) {
     if (shouldCheckSubmission(submission, data)) {
       const { time, units, ignoreModified } = data;
 
-      getPublishDate(url, !ignoreModified)
+      parser
+        .get(url, !ignoreModified)
         .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
           const postDate = moment(
@@ -451,26 +456,23 @@ async function runBot() {
   const { subreddits = [] } = config;
   const botActivity = await getBotActivity();
 
-  Promise.map(
-    subreddits,
-    data => {
-      if (!data.name || isNaN(data.time)) return Promise.resolve();
-      if (!['days', 'months', 'weeks'].includes(data.units))
-        data.units = 'days';
+  const createPromise = data => {
+    if (!data.name || isNaN(data.time)) return Promise.resolve();
+    if (!['days', 'months', 'weeks'].includes(data.units)) data.units = 'days';
 
-      return new Promise(resolve => {
-        checkSubreddit(data, botActivity)
-          .then(resolve)
-          .catch(error => {
-            log(error);
-            resolve();
-          });
-      });
-    },
-    { concurrency: 1 }
-  ).then(() => {
-    console.log('All done!');
-  });
+    return new Promise(resolve => {
+      checkSubreddit(data, botActivity)
+        .then(resolve)
+        .catch(error => {
+          log(error);
+          resolve();
+        });
+    });
+  };
+
+  Promise.map(subreddits, createPromise, { concurrency: 1 })
+    .then(() => console.log('All done!'))
+    .finally(async () => await parser.close(true));
 }
 
 runBot();

@@ -2,53 +2,11 @@ import DateParser from './DateParser.js';
 import { hrtime } from 'node:process';
 import jsdom from 'jsdom';
 import moment from 'moment';
-import Promise from 'bluebird';
-import cache from 'memory-cache';
 import _ from 'lodash';
-import { log as writeLog, fetchTimeout, freeRegExp, innerText, ApiError, DateNotFoundError, getError } from './util.js'; // prettier-ignore
+import { log as writeLog, fetchTimeout, freeRegExp, innerText, DateNotFoundError } from './util.js'; // prettier-ignore
 import { htmlOnlyDomains, jsonKeys, metaAttributes, months, selectors, sites, tlds } from './data/index.js'; // prettier-ignore
 
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
-
-puppeteer.use(StealthPlugin());
-puppeteer.use(
-  AdblockerPlugin({
-    blockTrackers: true,
-    interceptResolutionPriority: puppeteer.DEFAULT_INTERCEPT_RESOLUTION_PRIORITY
-  })
-);
-
-// async function getHtmlWithPuppeteer(url) {
-//   const browser = await puppeteer.launch({ headless: true });
-//   const page = await browser.newPage();
-
-//   await page.setRequestInterception(true);
-
-//   page.on('request', request => {
-//     const blockedTypes = ['image', 'stylesheet', 'font', 'media'];
-
-//     if (blockedTypes.includes(request.resourceType())) {
-//       request._interceptionHandled = false;
-//       request.abort();
-//     } else if (request._interceptionHandled) {
-//       return;
-//     } else {
-//       request.continue();
-//     }
-//   });
-
-//   await page.goto(url, { waitUntil: 'domcontentloaded' });
-//   const html = await page.content();
-
-//   await browser.close();
-//   return html;
-// }
-
 const { JSDOM } = jsdom;
-// const cacheDuration = 1000 * 60 * 10; // 10 minutes
-// const maxCacheItems = 1000;
 const dateLocations = {
   ELEMENT: 'HTML Element',
   ATTRIBUTE: 'HTML Attribute',
@@ -59,6 +17,114 @@ const dateLocations = {
 };
 
 moment.suppressDeprecationWarnings = true;
+
+////////////////////////////
+// Get Article Data
+////////////////////////////
+
+export default async function getPublishDate(
+  url,
+  checkModified,
+  html,
+  attemptFetch = true
+) {
+  if (!html && attemptFetch) html = await fetchArticle(url);
+  if (!html) throw new Error('Invalid HTML', url);
+
+  const {
+    date: publishDate = null,
+    organization = null,
+    title = null,
+    description = null,
+    dom
+  } = getDateFromHTML(html, url);
+
+  const location = publishDate?.location?.trim() ?? null;
+  const modifyDate =
+    publishDate && checkModified
+      ? getDateFromHTML(html, url, true, dom).date
+      : null;
+
+  let dateHtml = publishDate?.html?.trim() ?? null;
+
+  if (!publishDate?.hasFormattedJson && dateHtml?.match(/"[^"]+": ?"[^"]+"/)) {
+    dateHtml = formatDateJson(dateHtml);
+  }
+
+  const data = {
+    publishDate,
+    modifyDate,
+    organization,
+    title,
+    description,
+    location,
+    html: dateHtml
+  };
+
+  // Ensure JSDOM object is destroyed
+  if (dom && dom.window) {
+    dom.window.close();
+  }
+
+  // Avoid memory leaks from RegExp.lastMatch
+  freeRegExp();
+
+  if (!data.publishDate) {
+    throw new DateNotFoundError(url, { organization, title, description });
+  }
+
+  return data;
+}
+
+export { getPublishDate };
+
+export async function fetchArticle(
+  url,
+  shouldAddAdditionalHeaders,
+  controller
+) {
+  const options = {
+    // prettier-ignore
+    headers: {
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'accept-language': 'en-US,en;q=0.9,it;q=0.8,es;q=0.7',
+      'cache-control': 'max-age=0'
+    },
+    signal: controller?.signal,
+    method: 'GET',
+    compress: true,
+    insecureHTTPParser: true,
+    highWaterMark: 1024 * 1024
+  };
+
+  if (shouldAddAdditionalHeaders) {
+    options.headers['referrer'] = new URL(url).origin;
+    options.headers['user-agent'] =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36';
+  }
+
+  try {
+    const response = await fetchTimeout(url, 10000, options);
+
+    if (response.status === 200) return await response.text();
+    if (!shouldAddAdditionalHeaders && !controller?.signal.aborted) {
+      return await fetchArticle(url, true, controller);
+    }
+
+    throw new Error(`Status code: ${response.status}, URL: ${url}`);
+  } catch (error) {
+    if (
+      !shouldAddAdditionalHeaders &&
+      !controller?.signal.aborted &&
+      error.name !== 'AbortError' &&
+      error.code !== 'ECONNREFUSED'
+    ) {
+      return await fetchArticle(url, true, controller);
+    }
+
+    throw error;
+  }
+}
 
 ////////////////////////////
 // Logging
@@ -756,79 +822,6 @@ export function getDateFromString(string, url, location) {
   return null;
 }
 
-// async function fetchArticleHtml(url) {
-//   const options = {
-//     method: 'GET',
-//     // prettier-ignore
-//     headers: {
-//       'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-//       'accept-language': 'en-US,en;q=0.9,it;q=0.8,es;q=0.7',
-//       'cache-control': 'max-age=0'
-//     },
-//     compress: true,
-//     insecureHTTPParser: true,
-//     highWaterMark: 1024 * 1024
-//   };
-
-//   const response = await fetchTimeout(url, 30000, options);
-//   return await response.text();
-// }
-
-// function fetchArticleAndParse(url, checkModified, shouldSetUserAgent) {
-//   return new Promise((resolve, reject) => {
-//     getArticleHtml(url, shouldSetUserAgent)
-//       .then(html => {
-//         if (!html) return reject('Error fetching HTML');
-
-//         const article = getDateFromHTML(html, url);
-//         const {
-//           date = null,
-//           organization = null,
-//           title = null,
-//           description = null,
-//           dom
-//         } = article;
-//         const location = date?.location?.trim() ?? null;
-
-//         let dateHtml = date?.html?.trim() ?? null;
-
-//         if (!date?.hasFormattedJson && dateHtml?.match(/"[^"]+": ?"[^"]+"/)) {
-//           dateHtml = formatDateJson(dateHtml);
-//         }
-
-//         const data = {
-//           organization,
-//           title,
-//           description,
-//           location,
-//           html: dateHtml,
-//           publishDate: date,
-//           modifyDate:
-//             date && checkModified
-//               ? getDateFromHTML(html, url, true, dom).date
-//               : null
-//         };
-
-//         // Ensure JSDOM object is destroyed
-//         if (dom && dom.window) {
-//           dom.window.close();
-//         }
-
-//         // Avoid memory leaks from RegExp.lastMatch
-//         freeRegExp();
-
-//         if (data.publishDate) {
-//           resolve(data);
-//         } else {
-//           reject(
-//             new DateNotFoundError(url, { organization, title, description })
-//           );
-//         }
-//       })
-//       .catch(reject);
-//   });
-// }
-
 ////////////////////////////
 // Helpers
 ////////////////////////////
@@ -1132,156 +1125,8 @@ function getArticleMetadata(article, url) {
 }
 
 ////////////////////////////
-// Date Parsing
+// Testing
 ////////////////////////////
-
-export default async function getPublishDate(url, checkModified, html) {
-  html ||= await getArticleHtml(url);
-  if (!html) throw new Error('Invalid HTML', url);
-
-  const {
-    date: publishDate = null,
-    organization = null,
-    title = null,
-    description = null,
-    dom
-  } = getDateFromHTML(html, url);
-
-  const location = publishDate?.location?.trim() ?? null;
-  const modifyDate =
-    publishDate && checkModified
-      ? getDateFromHTML(html, url, true, dom).date
-      : null;
-
-  let dateHtml = publishDate?.html?.trim() ?? null;
-
-  if (!publishDate?.hasFormattedJson && dateHtml?.match(/"[^"]+": ?"[^"]+"/)) {
-    dateHtml = formatDateJson(dateHtml);
-  }
-
-  const data = {
-    publishDate,
-    modifyDate,
-    organization,
-    title,
-    description,
-    location,
-    html: dateHtml
-  };
-
-  // Ensure JSDOM object is destroyed
-  if (dom && dom.window) {
-    dom.window.close();
-  }
-
-  // Avoid memory leaks from RegExp.lastMatch
-  freeRegExp();
-
-  if (!data.publishDate) {
-    throw new DateNotFoundError(url, { organization, title, description });
-  }
-
-  return data;
-}
-
-export { getPublishDate };
-
-async function getArticleHtml(url, shouldAddAdditionalHeaders) {
-  const options = {
-    method: 'GET',
-    // prettier-ignore
-    headers: {
-      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'accept-language': 'en-US,en;q=0.9,it;q=0.8,es;q=0.7',
-      'cache-control': 'max-age=0'
-    },
-    compress: true,
-    insecureHTTPParser: true,
-    highWaterMark: 1024 * 1024
-  };
-
-  if (shouldAddAdditionalHeaders) {
-    options.headers['referrer'] = new URL(url).origin;
-    options.headers['user-agent'] =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36';
-  }
-
-  try {
-    const response = await fetchTimeout(url, 30000, options);
-
-    if (response.status === 200) return await response.text();
-    if (!shouldAddAdditionalHeaders) return await getArticleHtml(url, true);
-
-    throw new Error(`Status code: ${response.status}, URL: ${url}`);
-  } catch (error) {
-    if (!shouldAddAdditionalHeaders) return await getArticleHtml(url, true);
-    throw error;
-  }
-  // return new Promise((resolve, reject) => {
-
-  //   fetchTimeout(url, 30000, options)
-  //     .then(async response => {
-  //       if (response.status === 200) {
-  //         return resolve(await response.text());
-  //       }
-
-  //       reject(`status code ${response.status}, URL: ${url}`);
-  //     })
-  //     .catch(error => reject(`${error}, ${url}`));
-  // });
-}
-
-// Find the publish date from a passed URL
-// export function getPublishDateOld(url, checkModified) {
-//   if (url && url.trim().match(/\.pdf($|\?)/)) {
-//     return Promise.reject('URL refers to a PDF');
-//   }
-
-//   const cachedValue = cache.get(url);
-
-//   if (cache.size() >= maxCacheItems) {
-//     cache
-//       .keys()
-//       .slice(0, Math.floor(maxCacheItems / 2))
-//       .forEach(key => {
-//         cache.del(key);
-//       });
-//   }
-
-//   if (cachedValue) {
-//     return cachedValue instanceof ApiError
-//       ? Promise.reject(cachedValue)
-//       : Promise.resolve(cachedValue);
-//   }
-
-//   return new Promise((resolve, reject) => {
-//     const handleSuccess = data => {
-//       cache.put(url, data, cacheDuration);
-//       return resolve(data);
-//     };
-
-//     const handleError = error => {
-//       const apiError = getError(error, url);
-//       cache.put(url, apiError, cacheDuration);
-//       return reject(apiError);
-//     };
-
-//     try {
-//       fetchArticleAndParse(url, checkModified)
-//         .then(handleSuccess)
-//         .catch(() => {
-//           // If the first fetch fails, try requesting with additional
-//           // headers set. Sometimes websites return different HTML
-//           // based on the user agent or other headers making the request
-//           fetchArticleAndParse(url, checkModified, true)
-//             .then(handleSuccess)
-//             .catch(handleError);
-//         });
-//     } catch (error) {
-//       return handleError(error);
-//     }
-//   });
-// }
 
 if (process.argv[2]) {
   const start = hrtime.bigint();
@@ -1292,13 +1137,12 @@ if (process.argv[2]) {
     const parser = new DateParser();
 
     try {
-      // await parser.launch();
-
       // Get HTML with puppeteer
-      // const data = await parser.get(process.argv[2], checkModified);
+      const data = await parser.get(process.argv[2], checkModified);
 
       // Get HTML with fetch
-      const data = await getPublishDate(process.argv[2], checkModified);
+      // const data = await getPublishDate(process.argv[2], checkModified);
+
       const end = hrtime.bigint();
       const duration = Number(end - start) / 1e9;
 
@@ -1307,43 +1151,12 @@ if (process.argv[2]) {
 
       console.log(`Finished in ${duration} seconds`);
       console.log(data);
-
-      parser.close(true);
     } catch (error) {
       console.error(error);
-      parser.close(true);
     }
-    // await getHtmlWithPuppeteer(process.argv[2], checkModified);
 
-    // console.log(`Puppeteer finished in ${duration} seconds`);
+    await parser.close(true);
   })();
-
-  // (async () => {
-  //   await getHtmlWithFetch(process.argv[2], checkModified);
-  //   const end = hrtime.bigint();
-  //   const duration = Number(end - start) / 1e9;
-  //   console.log(`Fetch finished in ${duration} seconds`);
-  // })();
-
-  // getPublishDate(process.argv[2], checkModified)
-  //   .then(({ publishDate, modifyDate, location }) => {
-  //     publishDate = publishDate ? publishDate.format('YYYY-MM-DD') : null;
-  //     modifyDate = modifyDate ? modifyDate.format('YYYY-MM-DD') : null;
-
-  //     const end = hrtime.bigint();
-  //     const duration = Number(end - start) / 1e9;
-  //     console.log({
-  //       publishDate,
-  //       modifyDate,
-  //       method: location,
-  //       duration: `${duration} seconds`
-  //     });
-  //     cache.clear();
-  //   })
-  //   .catch(e => {
-  //     console.log(`Error: ${e}`);
-  //     cache.clear();
-  //   });
 } else {
   shouldLogDateMethod = false;
 }

@@ -1,5 +1,5 @@
 import data from './data/index.js';
-import getPublishDate from './get-publish-date.js';
+import DateParser from './DateParser.js';
 import { ApiError, DateNotFoundError } from './util.js';
 import express from 'express';
 import cors from 'cors';
@@ -47,8 +47,10 @@ router.get('/get-date', cors(), async (req, res) => {
     errorType: null
   };
 
+  const parser = new DateParser({ puppeteerDelay: 300 });
+
   try {
-    const data = (await getPublishDate(url.href, true)) ?? {};
+    const data = (await parser.get(url.href, true)) ?? {};
 
     if (
       data.publishDate &&
@@ -57,6 +59,8 @@ router.get('/get-date', cors(), async (req, res) => {
     ) {
       data.modifyDate = null;
     }
+
+    parser.close();
 
     return res.json(
       Object.assign(response, {
@@ -76,6 +80,8 @@ router.get('/get-date', cors(), async (req, res) => {
     if (error instanceof DateNotFoundError && _.isPlainObject(error.metadata)) {
       Object.assign(data, error.metadata);
     }
+
+    await parser.close();
 
     return res.json(data);
   }
