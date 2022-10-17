@@ -177,8 +177,8 @@ export default class DateParser {
       const promises = [getWithFetch()];
       if (this.enablePuppeteer) promises.push(getWithPuppeteer());
       return await Promise.any(promises);
-    } catch {
-      return Promise.reject('Error loading page');
+    } catch (error) {
+      return Promise.reject(error);
     }
   }
 

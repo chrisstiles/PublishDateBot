@@ -73,11 +73,17 @@ export class ApiError {
 
 export class DateNotFoundError extends ApiError {
   constructor(url, metadata) {
-    super(url, `No date found: ${url}`, 'not-found');
+    super(url, `No date found: ${url}`, 'date-not-found');
 
     if (_.isPlainObject(metadata)) {
       this.metadata = metadata;
     }
+  }
+}
+
+export class ArticleFetchError extends ApiError {
+  constructor(url) {
+    super(url, `Page not found: ${url}`, 'loading-failed');
   }
 }
 
@@ -88,7 +94,9 @@ export function getError(error, url) {
   const message =
     (typeof error === 'string' ? error : error.message)?.trim() || 'API error';
 
-  return new ApiError(url, message.substring(0, maxErrorLength));
+  return ['AggregateError', 'FetchError', 'TimeoutError'].includes(error.name)
+    ? new ArticleFetchError(url)
+    : new ApiError(url, message.substring(0, maxErrorLength));
 }
 
 export function getSiteConfig(url) {
@@ -122,4 +130,16 @@ export function decodeHtml(str) {
   str = str?.trim();
   if (!str || typeof str !== 'string') return null;
   return decode(str.replace(/&lt;.+&gt;(.+)&lt;.+&gt;/g, '$1')).trim();
+}
+
+export function includesUrl(data, url) {
+  if (!(url instanceof URL)) url = new URL(url);
+
+  const dataset = new Set(data);
+  const root = url.hostname.replace(/^www\./, '');
+
+  return (
+    dataset.has(root) ||
+    (url.hostname.includes('www.') && dataset.has(url.hostname))
+  );
 }

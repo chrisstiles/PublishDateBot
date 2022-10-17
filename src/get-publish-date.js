@@ -11,9 +11,11 @@ import {
   decodeHtml,
   DateNotFoundError,
   getSiteConfig,
-  getSiteMetadata
+  getSiteMetadata,
+  includesUrl
 } from './util.js';
 import {
+  ignoreDomains,
   htmlOnlyDomains,
   jsonKeys,
   metaAttributes,
@@ -46,6 +48,8 @@ export default async function getPublishDate(
   findMetadata,
   attemptFetch = true
 ) {
+  const isIgnored = includesUrl(ignoreDomains, url);
+  if (!findMetadata && isIgnored) throw new DateNotFoundError(url);
   if (!html && attemptFetch) html = await fetchArticle(url);
   if (!html) throw new Error('Invalid HTML', url);
 
@@ -55,11 +59,11 @@ export default async function getPublishDate(
     title = null,
     description = null,
     dom
-  } = getDateFromHTML(html, url, false, null, findMetadata);
+  } = getDateFromHTML(html, url, false, null, findMetadata, isIgnored);
 
   const modifyDate =
     publishDate && checkModified
-      ? getDateFromHTML(html, url, true, dom, findMetadata).date
+      ? getDateFromHTML(html, url, true, dom, findMetadata, isIgnored).date
       : null;
 
   let dateHtml = publishDate?.html?.trim() ?? null;
@@ -149,7 +153,14 @@ export async function fetchArticle(
 // Date Parsing
 ////////////////////////////
 
-export function getDateFromHTML(html, url, checkModified, dom, findMetadata) {
+export function getDateFromHTML(
+  html,
+  url,
+  checkModified,
+  dom,
+  findMetadata,
+  isIgnoredDomain
+) {
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     return { date: getYoutubeDate(html), dom: null };
   }
@@ -173,11 +184,13 @@ export function getDateFromHTML(html, url, checkModified, dom, findMetadata) {
     Object.assign(data, getArticleMetadata(article, url));
   }
 
+  // Return if site is included in list of ignored domains
+  if (isIgnoredDomain) return data;
+
   // We can add site specific methods for finding publish
   // dates. This is helpful for websites with incorrect
   // or inconsistent ways of displaying publish dates
   const urlObject = new URL(url);
-  const hostname = urlObject.hostname.replace(/^www./, '');
   const site = getSiteConfig(urlObject);
 
   // Ignore site config it only contains metadata
@@ -230,16 +243,7 @@ export function getDateFromHTML(html, url, checkModified, dom, findMetadata) {
   // Some domains have incorrect dates in their
   // URLs or LD JSON. For those we only
   // check the page's markup for the date
-  let isHTMLOnly = false;
-
-  if (htmlOnlyDomains && htmlOnlyDomains.length) {
-    for (let domain of htmlOnlyDomains) {
-      if (hostname.includes(domain)) {
-        isHTMLOnly = true;
-        break;
-      }
-    }
-  }
+  const isHTMLOnly = includesUrl(htmlOnlyDomains, urlObject);
 
   // Try searching from just the HTML string with regex
   // We just look for JSON as it is not accurate to parse

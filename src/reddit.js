@@ -1,5 +1,5 @@
 import DateParser from './DateParser.js';
-import { log, config } from './util.js';
+import { log, config, includesUrl } from './util.js';
 import { ignoreDomains } from './data/index.js';
 import { months } from './data/index.js';
 import Promise from 'bluebird';
@@ -376,25 +376,19 @@ function mergeListings(listing1, listing2) {
   return submissions;
 }
 
-// const ignoreDomains = require('./data/ignore.json');
-
 function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   if (hasApprovedTitle(title, regex)) return false;
   if (postURL.trim().match(/\.pdf($|\?)/)) return false;
 
   try {
     const urlObject = new URL(postURL);
-    const { hostname: url, pathname } = urlObject;
+    const { hostname: pathname } = urlObject;
 
     // Do not check root domains
-    if (pathname === '/') {
-      return false;
-    }
+    if (pathname === '/') return false;
 
     // Do not check certain domains
-    for (let domain of ignoreDomains) {
-      if (url.includes(domain)) return false;
-    }
+    if (includesUrl(ignoreDomains, urlObject)) return false;
 
     // Check links that do not link to media
     return !media;
