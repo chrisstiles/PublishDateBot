@@ -35,7 +35,7 @@
     "key": ["article", "dates", "Available online"],
     "method": "linkedData"
   },
-  "skynews.com.au": ".metadata-date",
+
   "strath.ac.uk": {
     "key": ".press-line time",
     "attribute": "innerText"

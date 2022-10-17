@@ -3,6 +3,7 @@ import AbortController from 'abort-controller';
 import fetch from 'node-fetch';
 import { createRequire } from 'module';
 import _ from 'lodash';
+import { decode } from 'html-entities';
 
 const get = createRequire(import.meta.url);
 
@@ -115,4 +116,10 @@ export function getElementHtml(el, isAttribute) {
   }
 
   return el.outerHTML;
+}
+
+export function decodeHtml(str) {
+  str = str?.trim();
+  if (!str || typeof str !== 'string') return null;
+  return decode(str.replace(/&lt;.+&gt;(.+)&lt;.+&gt;/g, '$1')).trim();
 }

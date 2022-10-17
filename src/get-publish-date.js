@@ -3,12 +3,12 @@ import { hrtime } from 'node:process';
 import jsdom from 'jsdom';
 import moment from 'moment';
 import _ from 'lodash';
-import { decode } from 'html-entities';
 import {
   fetchTimeout,
   freeRegExp,
   innerText,
   getElementHtml,
+  decodeHtml,
   DateNotFoundError,
   getSiteConfig,
   getSiteMetadata
@@ -182,7 +182,10 @@ export function getDateFromHTML(html, url, checkModified, dom, findMetadata) {
 
   // Ignore site config it only contains metadata
   const ignoreSiteConfig =
-    typeof site === 'object' && Object.keys(site).every(k => k === 'metadata');
+    typeof site === 'object' &&
+    Object.keys(site).every(
+      k => k === 'metadata' || k === 'stopParsingIfNotFound'
+    );
 
   if (site && !checkModified && !ignoreSiteConfig) {
     // String values refer to selectors
@@ -219,7 +222,9 @@ export function getDateFromHTML(html, url, checkModified, dom, findMetadata) {
       }
     }
 
-    if (data.date) return data;
+    if (data.date || site.stopParsingIfNotFound) {
+      return data;
+    }
   }
 
   // Some domains have incorrect dates in their
@@ -1097,7 +1102,7 @@ function getArticleMetadata(article, url) {
   // Start by searching for structured data as it is the most reliable
   if (linkedData?.length) {
     const get = (...args) => {
-      return args.find(a => a && typeof a === 'string') ?? null;
+      return decodeHtml(args.find(a => a && typeof a === 'string')) || null;
     };
 
     for (const data of linkedData) {
@@ -1139,9 +1144,9 @@ function getArticleMetadata(article, url) {
     null;
 
   return {
-    organization: decode(organization?.trim()) || null,
-    title: decode(title?.trim()) || null,
-    description: decode(description?.trim()) || null
+    organization: decodeHtml(organization?.trim()) || null,
+    title: decodeHtml(title?.trim()) || null,
+    description: decodeHtml(description?.trim()) || null
   };
 }
 
@@ -1154,7 +1159,10 @@ if (process.argv[2]) {
   const checkModified = process.argv[3] !== 'false';
 
   (async () => {
-    const parser = new DateParser();
+    const parser = new DateParser({
+      findMetadata: true,
+      puppeteerDelay: 300
+    });
 
     try {
       // Get HTML with both puppeteer as a fallback if fetch fails
