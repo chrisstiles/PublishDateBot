@@ -1157,10 +1157,10 @@ if (process.argv[2]) {
     const parser = new DateParser();
 
     try {
-      // Get HTML with puppeteer
+      // Get HTML with both puppeteer as a fallback if fetch fails
       const data = await parser.get(process.argv[2], checkModified);
 
-      // Get HTML with fetch
+      // Get HTML with fetch only
       // const data = await getPublishDate(process.argv[2], checkModified);
 
       const end = hrtime.bigint();

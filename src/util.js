@@ -6,16 +6,16 @@ import _ from 'lodash';
 
 const get = createRequire(import.meta.url);
 
-export function log(message) {
-  if (message instanceof ApiError) {
-    message = message.error;
-  } else if (typeof message === 'object') {
-    message = JSON.stringify(message);
-  } else if (message.toString) {
-    message = message.toString();
+export function log(error) {
+  if (error instanceof ApiError) {
+    error = error.message;
+  } else if (typeof error === 'object') {
+    error = JSON.stringify(error);
+  } else if (error.toString) {
+    error = error.toString();
   }
 
-  setImmediate(() => process.stdout.write(message + '\n'));
+  setImmediate(() => process.stdout.write(error + '\n'));
 }
 
 export function fetchTimeout(url, ms, { signal, ...options } = {}) {
@@ -65,14 +65,14 @@ export function innerText(el) {
 export class ApiError {
   constructor(url, message, type = 'server') {
     this.url = url;
-    this.message = message || 'API error';
+    this.message = message || `API error: ${url}`;
     this.type = type;
   }
 }
 
 export class DateNotFoundError extends ApiError {
   constructor(url, metadata) {
-    super(url, 'No date found', 'not-found');
+    super(url, `No date found: ${url}`, 'not-found');
 
     if (_.isPlainObject(metadata)) {
       this.metadata = metadata;
