@@ -1,5 +1,14 @@
-import { getPublishDate, fetchArticle } from './get-publish-date.js';
-import { ApiError, getError, getSiteMetadata } from './util.js';
+import {
+  getPublishDate,
+  fetchArticle,
+  getArticleMetadata
+} from './get-publish-date.js';
+import {
+  ApiError,
+  ArticleFetchError,
+  getError,
+  getSiteMetadata
+} from './util.js';
 import cache from 'memory-cache';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -29,7 +38,8 @@ export default class DateParser {
       puppeteerDelay: 3000,
       disableCache: false,
       method: null,
-      findMetadata: false
+      findMetadata: false,
+      timeout: 30000
     });
 
     this.browser = null;
@@ -38,6 +48,7 @@ export default class DateParser {
     this.disableCache = opts.disableCache;
     this.method = opts.method;
     this.findMetadata = opts.findMetadata;
+    this.timeout = opts.timeout;
   }
 
   async launch() {
@@ -163,7 +174,7 @@ export default class DateParser {
     };
 
     const getWithFetch = async () => {
-      const html = await fetchArticle(url, true, controller);
+      const html = await fetchArticle(url, true, controller, this.timeout);
       clearTimeout(puppeteerTimeout);
 
       if (!this.disableCache) {
@@ -201,9 +212,21 @@ export default class DateParser {
       }
     });
 
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    const response = await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: this.timeout
+    });
+
     const html = await page.content();
+
     if (!page.isClosed()) await page.close();
+    if (!response.ok()) {
+      if (response.status() === 404) {
+        throw new ArticleFetchError(url, getArticleMetadata(html, url, true));
+      }
+
+      return Promise.reject('Error loading page');
+    }
 
     return html || Promise.reject('Error loading page');
   }

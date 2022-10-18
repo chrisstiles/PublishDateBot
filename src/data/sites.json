@@ -19,6 +19,11 @@
   "kathmandupost.com": ".page-detail--content .updated-time",
   "msn.com": ".authortime-info time[datetime]",
   "muslim.co": "li[itemprop='datePublished']",
+  "nytimes.com": {
+    "metadata": {
+      "organization": "The New York Times"
+    }
+  },
   "oaxmedia.com": {
     "key": ".s-content__header-meta",
     "attribute": "innerText"
@@ -48,6 +53,7 @@
   "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
   "washingtonpost.com": {
     "metadata": {
+      "organization": "The Washington Post",
       "fetchWith": "puppeteer"
     }
   }

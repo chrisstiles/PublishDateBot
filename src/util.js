@@ -69,6 +69,10 @@ export class ApiError {
     this.message = message || `API error: ${url}`;
     this.type = type;
   }
+
+  get name() {
+    return this.constructor.name;
+  }
 }
 
 export class DateNotFoundError extends ApiError {
@@ -82,12 +86,20 @@ export class DateNotFoundError extends ApiError {
 }
 
 export class ArticleFetchError extends ApiError {
-  constructor(url) {
+  constructor(url, metadata) {
     super(url, `Page not found: ${url}`, 'loading-failed');
+
+    if (_.isPlainObject(metadata)) {
+      this.metadata = metadata;
+    }
   }
 }
 
 export function getError(error, url) {
+  if (error.name === 'AggregateError') {
+    error = error.errors.find(e => e instanceof ApiError) ?? error;
+  }
+
   if (error instanceof ApiError) return error;
 
   const maxErrorLength = 800;
@@ -127,8 +139,7 @@ export function getElementHtml(el, isAttribute) {
 }
 
 export function decodeHtml(str) {
-  str = str?.trim();
-  if (!str || typeof str !== 'string') return null;
+  if (typeof str !== 'string' || !str.trim()) return null;
   return decode(str.replace(/&lt;.+&gt;(.+)&lt;.+&gt;/g, '$1')).trim();
 }
 

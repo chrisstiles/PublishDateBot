@@ -12,7 +12,8 @@ import {
   DateNotFoundError,
   getSiteConfig,
   getSiteMetadata,
-  includesUrl
+  includesUrl,
+  ArticleFetchError
 } from './util.js';
 import {
   ignoreDomains,
@@ -84,13 +85,7 @@ export default async function getPublishDate(
     html: dateHtml
   };
 
-  // Ensure JSDOM object is destroyed
-  if (dom && dom.window) {
-    dom.window.close();
-  }
-
-  // Avoid memory leaks from RegExp.lastMatch
-  freeRegExp();
+  cleanup(dom);
 
   if (!data.publishDate) {
     throw new DateNotFoundError(url, { organization, title, description });
@@ -104,7 +99,8 @@ export { getPublishDate };
 export async function fetchArticle(
   url,
   shouldAddAdditionalHeaders,
-  controller
+  controller,
+  timeout = 30000
 ) {
   const options = {
     // prettier-ignore
@@ -127,11 +123,16 @@ export async function fetchArticle(
   }
 
   try {
-    const response = await fetchTimeout(url, 30000, options);
+    const response = await fetchTimeout(url, timeout, options);
+    const html = await response.text();
 
-    if (response.status === 200) return await response.text();
+    if (response.status === 200) return html;
+    if (response.status === 404) {
+      throw new ArticleFetchError(url, getArticleMetadata(html, url, true));
+    }
+
     if (!shouldAddAdditionalHeaders && !controller?.signal.aborted) {
-      return await fetchArticle(url, true, controller);
+      return await fetchArticle(url, true, controller, timeout);
     }
 
     throw new Error(`Status code: ${response.status}, URL: ${url}`);
@@ -139,10 +140,11 @@ export async function fetchArticle(
     if (
       !shouldAddAdditionalHeaders &&
       !controller?.signal.aborted &&
+      error.name !== 'ArticleFetchError' &&
       error.name !== 'AbortError' &&
       error.code !== 'ECONNREFUSED'
     ) {
-      return await fetchArticle(url, true, controller);
+      return await fetchArticle(url, true, controller, timeout);
     }
 
     throw error;
@@ -152,6 +154,18 @@ export async function fetchArticle(
 ////////////////////////////
 // Date Parsing
 ////////////////////////////
+
+function getDom(html, dom) {
+  if (dom) return dom;
+  if (html instanceof JSDOM) return html;
+
+  html = (html || '')
+    .replace(/<style.*>\s?[^<]*<\/style>/g, '')
+    .replace(/<style/g, '<disbalestyle')
+    .replace(/<\/style /g, '</disablestyle');
+
+  return new JSDOM(html);
+}
 
 export function getDateFromHTML(
   html,
@@ -166,14 +180,7 @@ export function getDateFromHTML(
   }
 
   // Create virtual HTML document to parse
-  if (!dom) {
-    html = html
-      .replace(/<style.*>\s?[^<]*<\/style>/g, '')
-      .replace(/<style/g, '<disbalestyle')
-      .replace(/<\/style /g, '</disablestyle');
-
-    dom = new JSDOM(html);
-  }
+  dom = getDom(html, dom);
 
   const article = dom.window.document;
 
@@ -414,7 +421,7 @@ function checkLinkedData(article, url, checkModified, specificKey) {
 
   if (linkedData?.length) {
     for (const data of linkedData) {
-      if (typeof data === 'object') {
+      if (data && _.isPlainObject(data)) {
         if (specificKey) {
           const dateString = _.get(data, specificKey);
           const date = getMomentObject(dateString, url, dateLocations.DATA);
@@ -1087,17 +1094,27 @@ function getLinkedData(article) {
         return content;
       }
     })
+    .filter(n => n)
     .flat();
 }
 
-function getArticleMetadata(article, url) {
+export function getArticleMetadata(article, url, includeDocumentTitle) {
+  // Clean up JSDOM if instantiating a new object
+  const isNewDOM = typeof article === 'string';
+
+  if (isNewDOM) {
+    const dom = getDom(article);
+    article = dom.window.document;
+  }
+
   let {
     organization = null,
     title = null,
     description = null
   } = getSiteMetadata(url);
 
-  if (organization && title && description) {
+  if (!article || (organization && title && description)) {
+    if (isNewDOM) cleanup();
     return { organization, title, description };
   }
 
@@ -1106,28 +1123,33 @@ function getArticleMetadata(article, url) {
   // Start by searching for structured data as it is the most reliable
   if (linkedData?.length) {
     const get = (...args) => {
-      return decodeHtml(args.find(a => a && typeof a === 'string')) || null;
+      return args.find(a => typeof a === 'string' && a.trim());
     };
 
     for (const data of linkedData) {
-      if (typeof data === 'object') {
-        organization ??= get(data.publisher?.name, data.name);
-        title ??= get(data.headline);
-        description ??= get(data.description);
+      if (data && _.isPlainObject(data)) {
+        organization ||= get(
+          data.publisher?.name,
+          data.publicationName,
+          data.name
+        );
+
+        title ||= get(data.headline);
+        description ||= get(data.description);
       }
 
       if (organization && title && description) break;
     }
   }
 
+  const hostname = new URL(url).hostname;
+
   // Fallbacks if values were not found in linked data
-  organization ??= (
+  organization ??=
     article.querySelector('meta[property="og:site_name"]')?.content ??
     article.querySelector('meta[property="twitter:title"]')?.content ??
     article.querySelector('meta[name="application-name"]')?.content ??
-    new URL(url).hostname ??
-    null
-  )?.trim();
+    null;
 
   title ??=
     article.querySelector('meta[property="og:title"]')?.content ??
@@ -1136,10 +1158,37 @@ function getArticleMetadata(article, url) {
     article.title?.replace(/ ?[-|][^-|]+$/, '') ??
     null;
 
+  // We can optionally attempt to get the data from the page's
+  // title tag. This is less accurate than other methods
+  if (article.title && includeDocumentTitle) {
+    if (!organization) {
+      const orgFromTitle = article.title.match(/[-|]([^-|]+)$/)?.[1]?.trim();
+
+      if (orgFromTitle) {
+        const lowerDocumentTitle = orgFromTitle.toLowerCase();
+
+        if (hostname.includes(lowerDocumentTitle.replace(/ +/g, ''))) {
+          organization = orgFromTitle;
+        } else {
+          const words = lowerDocumentTitle
+            .replace(/the/g, '')
+            .trim()
+            .split(/\s+/g);
+
+          if (words.find(w => w.length >= 4 && hostname.includes(w))) {
+            organization = orgFromTitle;
+          }
+        }
+      }
+    }
+  }
+
   if (organization && title && organization !== title) {
     const regex = new RegExp(`^${organization} [-|]|[-|] ${organization}$`);
     title = title.replace(regex, '').trim();
   }
+
+  organization ??= hostname;
 
   description ??=
     article.querySelector('meta[property="og:description"]')?.content ??
@@ -1147,11 +1196,25 @@ function getArticleMetadata(article, url) {
     article.querySelector('meta[name="description"]')?.content ??
     null;
 
+  if (isNewDOM) cleanup();
+
   return {
     organization: decodeHtml(organization?.trim()) || null,
     title: decodeHtml(title?.trim()) || null,
     description: decodeHtml(description?.trim()) || null
   };
+}
+
+function cleanup(dom) {
+  if (!dom) return;
+
+  // Ensure JSDOM object is destroyed
+  if (dom.window) {
+    dom.window.close();
+  }
+
+  // Avoid memory leaks from RegExp.lastMatch
+  freeRegExp();
 }
 
 ////////////////////////////

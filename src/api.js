@@ -1,6 +1,6 @@
 import data from './data/index.js';
 import DateParser from './DateParser.js';
-import { ApiError, DateNotFoundError } from './util.js';
+import { ApiError } from './util.js';
 import express from 'express';
 import cors from 'cors';
 import _ from 'lodash';
@@ -51,9 +51,10 @@ router.get('/get-date', cors(), async (req, res) => {
   const { cache, method } = req.query;
   const parser = new DateParser({
     findMetadata: true,
-    puppeteerDelay: 300,
+    puppeteerDelay: 200,
     disableCache: cache === 'false',
-    method: method || null
+    method: method || null,
+    timeout: 15000
   });
 
   try {
@@ -93,7 +94,7 @@ router.get('/get-date', cors(), async (req, res) => {
       errorType: error instanceof ApiError ? error.type : 'server'
     });
 
-    if (error instanceof DateNotFoundError && _.isPlainObject(error.metadata)) {
+    if (error instanceof ApiError && _.isPlainObject(error.metadata)) {
       Object.assign(data, error.metadata);
     }
 
