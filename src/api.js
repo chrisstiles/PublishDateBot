@@ -14,6 +14,8 @@ router.get('/data', cors(), (_, res) => {
   res.send(data);
 });
 
+router.get('/ping', cors(), (_, res) => res.sendStatus(200));
+
 router.get('/get-date', cors(), async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
