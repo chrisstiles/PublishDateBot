@@ -211,7 +211,6 @@ export function getDateFromHTML(
     // String values refer to selectors
     if (typeof site === 'string') {
       data.date = checkSelectors(article, html, site, false, url);
-      return data;
     }
 
     if (

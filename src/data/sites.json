@@ -5,7 +5,7 @@
     "method": "html",
     "key": "last_updated\":{\"date"
   },
-  "cnn.com": "meta[name='lastmod']",
+  "cnn.com": "meta[property='article:published_time']",
   "connexionfrance.com": "[class^=ArticleDate_articleDate]",
   "deutschlandfunk.de": ".articlehead time",
   "en.farsnews.ir": ".date-news",
