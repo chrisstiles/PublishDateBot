@@ -527,6 +527,11 @@ function checkSelectors(article, html, site, checkModified, url) {
     }
   }
 
+  const getDateLocation = el => {
+    if (!el) return null;
+    return el.tagName === 'META' ? dateLocations.META : dateLocations.ATTRIBUTE;
+  };
+
   for (let selector of arr) {
     const selectorString = specificSelector
       ? specificSelector
@@ -545,7 +550,7 @@ function checkSelectors(article, html, site, checkModified, url) {
 
           const location = isInnerText
             ? dateLocations.ELEMENT
-            : dateLocations.ATTRIBUTE;
+            : getDateLocation(element);
 
           const date = getMomentObject(value, url, location, true);
 
@@ -566,7 +571,7 @@ function checkSelectors(article, html, site, checkModified, url) {
           const date = getMomentObject(
             dateAttribute,
             url,
-            dateLocations.ATTRIBUTE
+            getDateLocation(element)
           );
 
           if (date) {
@@ -580,7 +585,7 @@ function checkSelectors(article, html, site, checkModified, url) {
         const dateString = textContent || valueAttribute;
         const location = textContent
           ? dateLocations.ELEMENT
-          : dateLocations.ATTRIBUTE;
+          : getDateLocation(element);
 
         let date = getDateFromString(dateString, url, location);
 

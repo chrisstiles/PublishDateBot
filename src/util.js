@@ -123,6 +123,13 @@ export function getSiteMetadata(url) {
 export function getElementHtml(el, isAttribute) {
   if (!el) return null;
   if (typeof el === 'string') return el.trim();
+  if (el.dataset && el.getAttributeNames().length > 1) {
+    for (const prop in el.dataset) {
+      if (!prop.match(/date|time|publish/i)) {
+        delete el.dataset[prop];
+      }
+    }
+  }
   if (isAttribute) return el.outerHTML;
 
   Array.from(el.children).forEach(child => {
