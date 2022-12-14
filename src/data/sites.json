@@ -67,5 +67,10 @@
       "organization": "The Washington Post",
       "fetchWith": "puppeteer"
     }
+  },
+  "yahoo.com": {
+    "metadata": {
+      "organization": "Yahoo"
+    }
   }
 }
