@@ -16,6 +16,11 @@
   "iihf.com": ".m-article-header .s-date",
   "imeche.org": ".panel__content--fixed",
   "infacto.bg": "time[itemprop='datePublished']",
+  "jpost.com": {
+    "metadata": {
+      "fetchWith": "puppeteer"
+    }
+  },
   "kathmandupost.com": ".page-detail--content .updated-time",
   "msn.com": ".authortime-info time[datetime]",
   "muslim.co": "li[itemprop='datePublished']",
@@ -51,7 +56,8 @@
   "thestandard.com.hk": "#content .heading",
   "today.com": {
     "metadata": {
-      "organization": "TODAY.com"
+      "organization": "TODAY.com",
+      "fetchWith": "puppeteer"
     }
   },
   "uanews.arizona.edu": ".authoring-info .field-type-date",
