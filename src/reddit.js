@@ -1,5 +1,5 @@
 import DateParser from './DateParser.js';
-import { log, config, includesUrl } from './util.js';
+import { log, config, includesUrl, isMediaLink } from './util.js';
 import { ignoreDomains } from './data/index.js';
 import { months } from './data/index.js';
 import Promise from 'bluebird';
@@ -378,7 +378,7 @@ function mergeListings(listing1, listing2) {
 
 function shouldCheckSubmission({ url: postURL, media, title }, { regex }) {
   if (hasApprovedTitle(title, regex)) return false;
-  if (postURL.trim().match(/\.pdf($|\?)/)) return false;
+  if (isMediaLink(postURL)) return false;
 
   try {
     const urlObject = new URL(postURL);

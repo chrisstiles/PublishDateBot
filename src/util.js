@@ -161,3 +161,19 @@ export function includesUrl(data, url) {
     (url.hostname.includes('www.') && dataset.has(url.hostname))
   );
 }
+
+// prettier-ignore
+const mediaExtensions = ['pdf','doc','docx','ppt','pptx','xls','xlsx','xml','bmp','gif','jpg','jpeg','png','wav','mp3','mp4','mpg','mpeg','mov','avi','rar','zip','txt','rtf','webm','ogg','wav','ogv','oga','flv','m4v','svg','css','js','html','json','lottie','woff','woff2','otf'];
+
+export function isMediaLink(url) {
+  if (!url) return false;
+  if (typeof url === 'string') {
+    try {
+      url = new URL(url.trim());
+    } catch {
+      return false;
+    }
+  }
+
+  return mediaExtensions.includes(url.pathname.split('.').pop());
+}

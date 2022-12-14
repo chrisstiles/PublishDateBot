@@ -1,6 +1,6 @@
 import data from './data/index.js';
 import DateParser from './DateParser.js';
-import { ApiError } from './util.js';
+import { ApiError, isMediaLink } from './util.js';
 import express from 'express';
 import cors from 'cors';
 import _ from 'lodash';
@@ -31,9 +31,12 @@ router.get('/get-date', cors(), async (req, res) => {
     });
   }
 
-  if (url.pathname.endsWith('.pdf')) {
+  if (isMediaLink(url)) {
+    const isPDF = url.pathname.endsWith('.pdf');
+    const text = isPDF ? 'PDFs' : 'media links';
+
     return res.send({
-      error: 'Parsing publish dates from PDFs is not supported',
+      error: `Parsing publish dates from ${text} is not supported`,
       errorType: 'validation'
     });
   }
