@@ -49,6 +49,11 @@
     "method": "linkedData"
   },
   "thestandard.com.hk": "#content .heading",
+  "today.com": {
+    "metadata": {
+      "organization": "TODAY.com"
+    }
+  },
   "uanews.arizona.edu": ".authoring-info .field-type-date",
   "volusiasheriff.org": ".ct-pageWrapper .col-sm-12",
   "washingtonpost.com": {
