@@ -16,6 +16,12 @@ router.get('/data', cors(), (_, res) => {
 
 router.get('/ping', cors(), (_, res) => res.sendStatus(200));
 
+const parser = new DateParser({
+  findMetadata: true,
+  puppeteerDelay: 200,
+  timeout: 15000
+});
+
 router.get('/get-date', cors(), async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -54,13 +60,16 @@ router.get('/get-date', cors(), async (req, res) => {
   };
 
   const { cache, method } = req.query;
-  const parser = new DateParser({
-    findMetadata: true,
-    puppeteerDelay: 200,
-    disableCache: cache === 'false',
-    method: method || null,
-    timeout: 15000
-  });
+
+  parser.disableCache = cache === 'false';
+  parser.method = method || null;
+  // const parser = new DateParser({
+  //   findMetadata: true,
+  //   puppeteerDelay: 200,
+  //   disableCache: cache === 'false',
+  //   method: method || null,
+  //   timeout: 15000
+  // });
 
   try {
     const data = (await parser.get(url.href, true)) ?? {};
@@ -84,13 +93,15 @@ router.get('/get-date', cors(), async (req, res) => {
       });
     }
 
-    return res.json(
+    res.json(
       Object.assign(response, {
         ...data,
         publishDate: data.publishDate?.toISOString() ?? null,
         modifyDate: data.modifyDate?.toISOString() ?? null
       })
     );
+
+    // parser.close();
   } catch (error) {
     console.error(error);
 
@@ -103,9 +114,14 @@ router.get('/get-date', cors(), async (req, res) => {
       Object.assign(data, error.metadata);
     }
 
-    await parser.close();
+    // await parser.close();
 
-    return res.json(data);
+    // return res.json(data);
+    res.json(data);
+
+    // parser.close();
+  } finally {
+    parser.close();
   }
 });
 

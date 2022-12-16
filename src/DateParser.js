@@ -10,19 +10,13 @@ import {
   getSiteMetadata
 } from './util.js';
 import cache from 'memory-cache';
-import puppeteer from 'puppeteer-extra';
+// import puppeteer from 'puppeteer-extra';
+import basePuppeteer from 'puppeteer';
+import { Cluster } from 'puppeteer-cluster';
+import { addExtra } from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 import _ from 'lodash';
-
-puppeteer.use(StealthPlugin());
-puppeteer.use(
-  AdblockerPlugin({
-    blockTrackers: true,
-    blockTrackersAndAnnoyances: true,
-    interceptResolutionPriority: 0
-  })
-);
 
 const cacheDuration = 1000 * 60 * 10; // 10 minutes
 const maxCacheItems = 1000;
@@ -194,52 +188,99 @@ export default class DateParser {
   }
 
   async getPageWithPuppeteer(url) {
+    // async getPageWithPuppeteer({ page, data: url }) {
     if (!this.enablePuppeteer) {
       return Promise.reject('Puppeteer is disabled');
     }
 
-    await this.launch();
-    const page = await this.browser.newPage();
+    // await this.launch();
+    // const page = await this.browser.newPage();
 
-    await page.setJavaScriptEnabled(false);
-    await page.setRequestInterception(true);
+    return await cluster.execute(url, async ({ page }) => {
+      await page.setJavaScriptEnabled(false);
+      await page.setRequestInterception(true);
 
-    page.on('request', request => {
-      if (request.resourceType() === 'document') {
-        request.continue();
-      } else {
-        request.abort();
+      page.on('request', request => {
+        if (request.resourceType() === 'document') {
+          request.continue();
+        } else {
+          request.abort();
+        }
+      });
+
+      const response = await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: this.timeout
+      });
+
+      const html = await page.content();
+
+      // if (!page.isClosed()) await page.close();
+      if (!response.ok()) {
+        if (response.status() === 404) {
+          throw new ArticleFetchError(url, getArticleMetadata(html, url, true));
+        }
+
+        return Promise.reject('Error loading page');
       }
+
+      return html || Promise.reject('Error loading page');
     });
-
-    const response = await page.goto(url, {
-      waitUntil: 'domcontentloaded',
-      timeout: this.timeout
-    });
-
-    const html = await page.content();
-
-    if (!page.isClosed()) await page.close();
-    if (!response.ok()) {
-      if (response.status() === 404) {
-        throw new ArticleFetchError(url, getArticleMetadata(html, url, true));
-      }
-
-      return Promise.reject('Error loading page');
-    }
-
-    return html || Promise.reject('Error loading page');
   }
 
   async close(shouldClearCache) {
     if (shouldClearCache) this.clearCache();
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
-    }
+
+    await cluster.idle();
+    await cluster.close();
+    // if (this.browser) {
+    //   await this.browser.close();
+    //   this.browser = null;
+    // }
   }
 
   clearCache() {
     if (!this.disableCache) cache.clear();
   }
 }
+
+const puppeteer = addExtra(basePuppeteer);
+
+puppeteer.use(StealthPlugin());
+puppeteer.use(
+  AdblockerPlugin({
+    blockTrackers: true,
+    blockTrackersAndAnnoyances: true,
+    interceptResolutionPriority: 0
+  })
+);
+
+const cluster = await Cluster.launch({
+  puppeteer,
+  maxConcurrency: 2,
+  concurrency: Cluster.CONCURRENCY_CONTEXT,
+  puppeteerOptions: {
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  }
+});
+
+// await cluster.task(async ({ page, data: url }) => {
+//   await page.setJavaScriptEnabled(false);
+//   await page.setRequestInterception(true);
+
+//     page.on('request', request => {
+//       if (request.resourceType() === 'document') {
+//         request.continue();
+//       } else {
+//         request.abort();
+//       }
+//     });
+
+//     const response = await page.goto(url, {
+//       waitUntil: 'domcontentloaded',
+//       timeout: this.timeout
+//     });
+
+//     const html = await page.content();
+// });
