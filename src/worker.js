@@ -10,7 +10,7 @@ import {
   ensureCacheSize,
   fetchMethods
 } from './util.js';
-import { Queue, QueueEvents, Worker } from 'bullmq';
+import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import throng from 'throng';
 import basePuppeteer from 'puppeteer';
@@ -39,36 +39,40 @@ puppeteer.use(
 );
 
 async function start() {
-  const queueEvents = new QueueEvents('date-worker', { connection });
-
-  queueEvents.on('close-browser', () => {
-    console.log('Close browser event in process:', process.pid);
-  });
-
   const { getCluster, closeCluster, clearCloseClusterTimer } = (() => {
     let cluster = null;
     let closeClusterTimer = null;
+    let isClosing = false;
     let promises = [];
 
     return {
       getCluster: async (shouldLaunch = true) => {
-        if (shouldLaunch && (!cluster || cluster.isClosed)) {
-          cluster = await Cluster.launch({
-            puppeteer,
-            maxConcurrency: 2,
-            concurrency: Cluster.CONCURRENCY_CONTEXT,
-            puppeteerOptions: {
-              headless: true,
-              args: [
-                '--disable-accelerated-2d-canvas',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-setuid-sandbox',
-                '--ignore-certificate-errors',
-                '--no-sandbox'
-              ]
-            }
-          });
+        if (isClosing && !cluster?.isClosed) {
+          await cluster?.close();
+          cluster = null;
+        }
+
+        if (shouldLaunch) {
+          clearTimeout(closeClusterTimer);
+
+          if (!cluster || cluster.isClosed) {
+            cluster = await Cluster.launch({
+              puppeteer,
+              maxConcurrency: 2,
+              concurrency: Cluster.CONCURRENCY_CONTEXT,
+              puppeteerOptions: {
+                headless: true,
+                args: [
+                  '--disable-accelerated-2d-canvas',
+                  '--disable-dev-shm-usage',
+                  '--disable-gpu',
+                  '--disable-setuid-sandbox',
+                  '--ignore-certificate-errors',
+                  '--no-sandbox'
+                ]
+              }
+            });
+          }
         }
 
         return cluster;
@@ -85,10 +89,14 @@ async function start() {
 
         closeClusterTimer = setTimeout(async () => {
           if (!cluster) return;
+          isClosing = true;
 
-          await cluster?.idle();
-          await cluster?.close();
+          if (!cluster?.isClosed) {
+            await cluster?.idle();
+            await cluster?.close();
+          }
 
+          isClosing = false;
           cluster = null;
           promises.forEach(resolve => resolve());
           promises = [];
@@ -101,13 +109,13 @@ async function start() {
     };
   })();
 
-  const resultsQueue = new Queue('date-results', {
-    connection,
-    defaultJobOptions: {
-      removeOnComplete: 10,
-      removeOnFail: 10
-    }
-  });
+  // const resultsQueue = new Queue('date-results', {
+  //   connection,
+  //   defaultJobOptions: {
+  //     removeOnComplete: 10,
+  //     removeOnFail: 10
+  //   }
+  // });
 
   async function execute(job) {
     const {
@@ -243,32 +251,31 @@ async function start() {
     };
 
     const sharedResultArgs = { url, disableCache, id: jobId };
+    const closeDelay = Math.max(100, puppeteerCloseDelay ?? 100);
 
     try {
       const html = await loadPage(url);
       const data = await getPublishDate(url, checkModified, html, findMetadata);
 
-      await resultsQueue.add('result', {
+      setTimeout(() => {
+        closeCluster(closeDelay - 100);
+      }, 100);
+
+      return {
         type: 'success',
         result: data,
         ...sharedResultArgs
-      });
-
-      await closeCluster(puppeteerCloseDelay);
-
-      return data;
+      };
     } catch (error) {
-      const data = getError(error, url);
+      setTimeout(() => {
+        closeCluster(closeDelay - 100);
+      }, 100);
 
-      await resultsQueue.add('result', {
+      return {
         type: 'error',
-        result: data,
+        result: getError(error, url),
         ...sharedResultArgs
-      });
-
-      await closeCluster(puppeteerCloseDelay);
-
-      return data;
+      };
     }
   }
 
@@ -280,7 +287,7 @@ async function start() {
           return await execute(job);
         case 'close':
           if (job.data.clearCache) cache.clear();
-          return await closeCluster(job.data.puppeteerCloseDelay);
+          return closeCluster(job.data.puppeteerCloseDelay);
         default:
           return Promise.reject(new Error('Invalid job name'));
       }
@@ -288,16 +295,19 @@ async function start() {
     { connection, concurrency: 10 }
   );
 
-  worker.on('failed', ({ id }, error) => {
-    console.error('WORKER FAILED', id, error);
+  worker.on('failed', ({ id, data }, error) => {
+    console.error('WORKER FAILED', { id, url: data.url, error });
+    closeCluster();
   });
 
   worker.on('error', error => {
     console.error('WORKER ERROR', error);
+    closeCluster();
   });
 
   worker.on('stalled', jobId => {
     console.error('WORKER STALLED', jobId);
+    closeCluster();
   });
 }
 

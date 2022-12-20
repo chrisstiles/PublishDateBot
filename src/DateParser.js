@@ -1,5 +1,5 @@
-import { ApiError, getId, ensureCacheSize } from './util.js';
-import { Queue, QueueEvents, Worker } from 'bullmq';
+import { ApiError, getId, getError, ensureCacheSize } from './util.js';
+import { Queue, QueueEvents } from 'bullmq';
 import Redis from 'ioredis';
 import cache from 'memory-cache';
 import moment from 'moment';
@@ -14,7 +14,7 @@ const connection = new Redis(process.env.REDIS_URL, {
 
 let queueEvents = null;
 let workerQueue = null;
-let resultsQueue = null;
+// let resultsQueue = null;
 
 export class DateParser {
   static instance = new DateParser();
@@ -68,47 +68,48 @@ export class DateParser {
       });
     }
 
-    if (!resultsQueue) {
-      resultsQueue = new Worker('date-results', DateParser.done, {
-        connection,
-        defaultJobOptions: {
-          removeOnComplete: true,
-          removeOnFail: true
-        }
-      });
-    }
+    // if (!resultsQueue) {
+    //   resultsQueue = new Worker('date-results', DateParser.done, {
+    //     connection,
+    //     defaultJobOptions: {
+    //       removeOnComplete: true,
+    //       removeOnFail: true
+    //     }
+    //   });
+    // }
   }
 
-  static async done({ id: jobId, data = {} }) {
-    const { id, url, type, disableCache, result = null } = data;
-    const job = DateParser.jobs[id];
+  // static async done({ id: jobId, data = {} }) {
+  //   const { id, url, type, disableCache, result = null } = data;
+  //   const job = DateParser.jobs[id];
 
-    if (!job) {
-      console.error('Job not found', { jobId, ...data });
-      return;
-    }
+  //   if (!job) {
+  //     console.error('Job not found', { jobId, ...data });
+  //     return;
+  //   }
 
-    const isSuccess = type === 'success' && result;
-    const { callbacks, timer } = job;
+  //   clearTimeout(job.timer);
 
-    if (callbacks) clearTimeout(timer);
-    if (isSuccess) {
-      const { publishDate, modifyDate } = result;
-      result.publishDate = publishDate ? moment(publishDate) : null;
-      result.modifyDate = modifyDate ? moment(modifyDate) : null;
-    }
+  //   const isSuccess = type === 'success' && result;
+  //   const { callbacks } = job;
 
-    if (!disableCache) {
-      cache.put(url, result, cacheDuration);
-    }
+  //   if (isSuccess) {
+  //     const { publishDate, modifyDate } = result;
+  //     result.publishDate = publishDate ? moment(publishDate) : null;
+  //     result.modifyDate = modifyDate ? moment(modifyDate) : null;
+  //   }
 
-    delete DateParser.jobs[id];
+  //   if (!disableCache) {
+  //     cache.put(url, result, cacheDuration);
+  //   }
 
-    callbacks?.forEach(({ resolve, reject }) => {
-      const returnFn = isSuccess ? resolve : reject;
-      returnFn(result);
-    });
-  }
+  //   delete DateParser.jobs[id];
+
+  //   callbacks?.forEach(({ resolve, reject }) => {
+  //     const returnFn = isSuccess ? resolve : reject;
+  //     returnFn(result);
+  //   });
+  // }
 
   async get(url, opts = {}) {
     if (url && url.trim().match(/\.pdf($|\?)/)) {
@@ -139,22 +140,67 @@ export class DateParser {
 
     const jobId = getJobId(url);
 
-    return new Promise((resolve, reject) => {
-      if (DateParser.jobs[jobId]) {
-        DateParser.jobs[jobId].callacks.push({ resolve, reject });
-      } else {
-        DateParser.jobs[jobId] = {
-          callbacks: [{ resolve, reject }],
-          timer: setTimeout(() => {
-            reject(new ApiError(url, `Fetch timeout: ${url}`));
-          }, args.timeout + 100)
-        };
+    try {
+      const job = await workerQueue.add(
+        'get-date',
+        { ...args, jobId },
+        { priority: args.priority }
+      );
 
-        workerQueue
-          .add('get-date', { ...args, jobId }, { priority: args.priority })
-          .catch(reject);
+      const data = await job.waitUntilFinished(queueEvents, args.timeout);
+
+      const { type, result } = data;
+      const isSuccess = type === 'success' && result;
+
+      if (isSuccess) {
+        const { publishDate, modifyDate } = result;
+        result.publishDate = publishDate ? moment(publishDate) : null;
+        result.modifyDate = modifyDate ? moment(modifyDate) : null;
       }
-    });
+
+      if (!opts.disableCache) {
+        cache.put(url, result, cacheDuration);
+      }
+
+      return result;
+    } catch (error) {
+      return getError(error, url);
+    }
+
+    // return new Promise((resolve, reject) => {
+    //   if (DateParser.jobs[jobId]) {
+    //     DateParser.jobs[jobId].callacks.push({ resolve, reject });
+
+    //     clearTimeout(DateParser.jobs[jobId].timer);
+
+    //     DateParser.jobs[jobId].timer = setTimeout(() => {
+    //       const callbacks = DateParser.jobs[jobId]?.callbacks;
+
+    //       delete DateParser.jobs[jobId];
+
+    //       callbacks?.forEach(({ reject }) => {
+    //         reject(new ApiError(url, `Fetch timeout: ${url}`));
+    //       })
+    //     }, args.timeout + 100);
+    //   } else {
+    //     DateParser.jobs[jobId] = {
+    //       callbacks: [{ resolve, reject }],
+    //       timer: setTimeout(() => {
+    //         const callbacks = DateParser.jobs[jobId]?.callbacks;
+
+    //         delete DateParser.jobs[jobId];
+
+    //         callbacks?.forEach(({ reject }) => {
+    //           reject(new ApiError(url, `Fetch timeout: ${url}`));
+    //         });
+    //       }, args.timeout + 100)
+    //     };
+
+    //     workerQueue
+    //       .add('get-date', { ...args, jobId }, { priority: args.priority })
+    //       .catch(reject);
+    //   }
+    // });
   }
 
   async close({ puppeteerCloseDelay, clearCache } = {}) {

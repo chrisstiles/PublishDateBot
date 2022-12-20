@@ -97,8 +97,6 @@ router.get('/get-date', cors(), async (req, res) => {
     }
 
     res.json(data);
-  } finally {
-    parser.close();
   }
 });
 
