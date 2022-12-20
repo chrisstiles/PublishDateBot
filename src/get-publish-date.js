@@ -1,4 +1,4 @@
-import DateParser from './DateParser.js';
+import { Worker } from 'node:worker_threads';
 import { hrtime } from 'node:process';
 import jsdom from 'jsdom';
 import moment from 'moment';
@@ -77,13 +77,15 @@ export default async function getPublishDate(
 
   const data = {
     publishDate,
-    modifyDate,
+    modifyDate: modifyDate?.isAfter(publishDate, 'd') ? modifyDate : null,
     organization,
     title,
     description,
     location,
     html: dateHtml
   };
+
+  // data.modifyDate = modifyDate?.isAfter(publishDate, 'd') ? modifyDate : null;
 
   cleanup(dom);
 
@@ -1226,34 +1228,31 @@ function cleanup(dom) {
 ////////////////////////////
 
 if (process.argv[2]) {
+  const worker = new Worker('./src/worker.js');
+  const parser = await import('./DateParser');
   const start = hrtime.bigint();
   const checkModified = process.argv[3] !== 'false';
 
-  (async () => {
-    const parser = new DateParser({
-      findMetadata: true,
-      puppeteerDelay: 300
-    });
+  try {
+    // Get HTML with both puppeteer as a fallback if fetch fails
+    const data = await parser.get(process.argv[2], checkModified);
 
-    try {
-      // Get HTML with both puppeteer as a fallback if fetch fails
-      const data = await parser.get(process.argv[2], checkModified);
+    // Get HTML with fetch only
+    // const data = await getPublishDate(process.argv[2], checkModified);
 
-      // Get HTML with fetch only
-      // const data = await getPublishDate(process.argv[2], checkModified);
+    const end = hrtime.bigint();
+    const duration = Number(end - start) / 1e9;
 
-      const end = hrtime.bigint();
-      const duration = Number(end - start) / 1e9;
+    data.publishDate = data.publishDate?.format('YYYY-MM-DD') ?? null;
+    data.modifyDate = data.modifyDate?.format('YYYY-MM-DD') ?? null;
 
-      data.publishDate = data.publishDate?.format('YYYY-MM-DD') ?? null;
-      data.modifyDate = data.modifyDate?.format('YYYY-MM-DD') ?? null;
+    console.log(`Finished in ${duration} seconds`);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 
-      console.log(`Finished in ${duration} seconds`);
-      console.log(data);
-    } catch (error) {
-      console.error(error);
-    }
-
-    await parser.close(true);
-  })();
+  await parser.close({ clearCache: true });
+  await worker.terminate();
+  process.exit();
 }

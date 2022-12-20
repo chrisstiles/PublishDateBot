@@ -1,5 +1,5 @@
 import data from './data/index.js';
-import DateParser from './DateParser.js';
+import parser from './DateParser.js';
 import { ApiError, isMediaLink } from './util.js';
 import express from 'express';
 import cors from 'cors';
@@ -15,12 +15,6 @@ router.get('/data', cors(), (_, res) => {
 });
 
 router.get('/ping', cors(), (_, res) => res.sendStatus(200));
-
-const parser = new DateParser({
-  findMetadata: true,
-  puppeteerDelay: 200,
-  timeout: 15000
-});
 
 router.get('/get-date', cors(), async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -61,28 +55,18 @@ router.get('/get-date', cors(), async (req, res) => {
 
   const { cache, method } = req.query;
 
-  parser.disableCache = cache === 'false';
-  parser.method = method || null;
-  // const parser = new DateParser({
-  //   findMetadata: true,
-  //   puppeteerDelay: 200,
-  //   disableCache: cache === 'false',
-  //   method: method || null,
-  //   timeout: 15000
-  // });
-
   try {
-    const data = (await parser.get(url.href, true)) ?? {};
+    const args = {
+      checkModified: true,
+      disableCache: cache === 'false',
+      method: method || null,
+      findMetadata: true,
+      puppeteerDelay: 200,
+      puppeteerCloseDelay: 15000,
+      timeout: 15000
+    };
 
-    if (
-      data.publishDate &&
-      data.modifyDate &&
-      !data.modifyDate.isAfter(data.publishDate, 'd')
-    ) {
-      data.modifyDate = null;
-    }
-
-    parser.close();
+    const data = (await parser.get(url.href, args)) ?? {};
 
     // Format outputted HTML
     if (data.html) {
@@ -100,8 +84,6 @@ router.get('/get-date', cors(), async (req, res) => {
         modifyDate: data.modifyDate?.toISOString() ?? null
       })
     );
-
-    // parser.close();
   } catch (error) {
     console.error(error);
 
@@ -114,12 +96,7 @@ router.get('/get-date', cors(), async (req, res) => {
       Object.assign(data, error.metadata);
     }
 
-    // await parser.close();
-
-    // return res.json(data);
     res.json(data);
-
-    // parser.close();
   } finally {
     parser.close();
   }

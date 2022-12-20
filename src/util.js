@@ -63,6 +63,11 @@ export function innerText(el) {
     .trim();
 }
 
+export const fetchMethods = {
+  FETCH: 'fetch',
+  PUPPETEER: 'puppeteer'
+};
+
 export class ApiError {
   constructor(url, message, type = 'server') {
     this.url = url;
@@ -176,4 +181,44 @@ export function isMediaLink(url) {
   }
 
   return mediaExtensions.includes(url.pathname.split('.').pop());
+}
+
+// Original hash function from https://stackoverflow.com/a/52171480
+export function getId(str, prefix, seed = 0) {
+  let h1 = 0xdeadbeef ^ seed;
+  let h2 = 0x41c6ce57 ^ seed;
+
+  for (let i = 0, ch; i < str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+
+  h1 =
+    Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
+    Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 =
+    Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
+    Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+  const id = String(4294967296 * (2097151 & h2) + (h1 >>> 0));
+
+  return prefix ? `${prefix}-${id}` : id;
+}
+
+export async function sleep(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function ensureCacheSize(cache, maxCacheItems) {
+  if (cache.size() >= maxCacheItems) {
+    cache
+      .keys()
+      .slice(0, Math.floor(maxCacheItems / 2))
+      .forEach(key => {
+        cache.del(key);
+      });
+  }
 }

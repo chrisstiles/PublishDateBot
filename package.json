@@ -9,9 +9,11 @@
   "type": "module",
   "main": "./src/server.js",
   "scripts": {
+    "dev": "concurrently \"npm:watch-server\" \"npm:watch-worker\"",
     "start": "node ./src/server.js",
     "scss": "node-sass --watch ./src/public/css -o ./src/public/css --output-style compressed",
-    "server": "nodemon ./src/server.js",
+    "watch-server": "nodemon ./src/server.js",
+    "watch-worker": "nodemon ./src/worker.js",
     "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn ./src/reddit.js"
   },
   "nodemonConfig": {
@@ -24,12 +26,14 @@
   "dependencies": {
     "abort-controller": "^3.0.0",
     "bluebird": "^3.7.2",
+    "bullmq": "^3.4.2",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "html-entities": "^2.3.3",
     "install": "^0.13.0",
+    "ioredis": "^5.2.4",
     "jsdom": "^16.2.1",
     "lodash": "^4.17.19",
     "memory-cache": "^0.2.0",
@@ -47,9 +51,11 @@
     "puppeteer-extra-plugin-stealth": "^2.11.1",
     "serve-favicon": "^2.5.0",
     "snoowrap": "^1.23.0",
-    "strip-indent": "^3.0.0"
+    "strip-indent": "^3.0.0",
+    "throng": "^5.0.0"
   },
   "devDependencies": {
+    "concurrently": "^7.6.0",
     "eslint": "^8.29.0",
     "minimist": "^1.2.5",
     "nodemon": "^2.0.7"

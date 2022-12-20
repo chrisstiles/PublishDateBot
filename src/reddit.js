@@ -1,4 +1,4 @@
-import DateParser from './DateParser.js';
+import parser from './DateParser.js';
 import { log, config, includesUrl, isMediaLink } from './util.js';
 import { ignoreDomains } from './data/index.js';
 import { months } from './data/index.js';
@@ -11,10 +11,6 @@ import dotenv from 'dotenv';
 ///////////////////////
 // Initialize
 ///////////////////////
-
-const parser = new DateParser({
-  enablePuppeteer: false
-});
 
 // Environment Variables
 if (process.env.NODE_ENV !== 'production') {
@@ -136,7 +132,7 @@ async function checkSubreddit(data, botActivity) {
                   });
               });
             },
-            { concurrency: 3 }
+            { concurrency: 2 }
           ).then(resolve);
         });
       });
@@ -154,7 +150,7 @@ function checkSubmission(submission, data) {
       const { time, units, ignoreModified } = data;
 
       parser
-        .get(url, !ignoreModified)
+        .get(url, { checkModified: !ignoreModified, priority: 2 })
         .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
           const postDate = moment(
