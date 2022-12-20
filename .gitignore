@@ -13,3 +13,6 @@ docker-compose.yml
 
 # Editor
 .vscode
+
+# Redis
+dump.rdb
