@@ -79,12 +79,12 @@ export class DateParser {
     }
   }
 
-  static async done({ data = {} }) {
+  static async done({ id: jobId, data = {} }) {
     const { id, url, type, disableCache, result = null } = data;
     const job = DateParser.jobs[id];
 
     if (!job) {
-      console.error('Job not found', url);
+      console.error('Job not found', { jobId, ...data });
       return;
     }
 
