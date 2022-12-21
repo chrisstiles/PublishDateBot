@@ -106,13 +106,16 @@ export class DateParser {
 
       const data = await job.waitUntilFinished(queueEvents, args.timeout);
 
-      const { type, result } = data;
-      const isSuccess = type === 'success' && result;
+      const isSuccess = data.type === 'success' && data.result;
+      const result = isSuccess ? data.result : getError(data.result, url);
 
       if (isSuccess) {
         const { publishDate, modifyDate } = result;
         result.publishDate = publishDate ? moment(publishDate) : null;
         result.modifyDate = modifyDate ? moment(modifyDate) : null;
+      } else {
+        result.publishDate = null;
+        result.modifyDate = null;
       }
 
       if (!opts.disableCache) {
@@ -120,8 +123,14 @@ export class DateParser {
       }
 
       return result;
-    } catch (error) {
-      return getError(error, url);
+    } catch (workerError) {
+      const error = getError(workerError, url);
+
+      if (!opts.disableCache) {
+        cache.put(url, error, cacheDuration);
+      }
+
+      throw error;
     }
   }
 

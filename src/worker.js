@@ -8,9 +8,10 @@ import {
   getError,
   getSiteMetadata,
   ensureCacheSize,
-  fetchMethods
+  fetchMethods,
+  DateNotFoundError
 } from './util.js';
-import { Worker } from 'bullmq';
+import { Worker, UnrecoverableError } from 'bullmq';
 import Redis from 'ioredis';
 import throng from 'throng';
 import basePuppeteer from 'puppeteer';
@@ -263,11 +264,7 @@ async function start() {
         closeCluster(closeDelay - 100);
       }, 100);
 
-      return {
-        type: 'error',
-        result: getError(error, url),
-        ...sharedResultArgs
-      };
+      throw getError(error, url);
     }
   }
 
@@ -288,7 +285,10 @@ async function start() {
   );
 
   worker.on('failed', ({ id, data }, error) => {
-    console.error('WORKER FAILED', { id, url: data.url, error });
+    if (!(error instanceof DateNotFoundError)) {
+      console.error('WORKER FAILED', { id, url: data.url, error });
+    }
+
     closeCluster();
   });
 

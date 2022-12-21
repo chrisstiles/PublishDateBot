@@ -88,6 +88,10 @@ export class DateNotFoundError extends ApiError {
       this.metadata = metadata;
     }
   }
+
+  get name() {
+    return 'UnrecoverableError';
+  }
 }
 
 export class ArticleFetchError extends ApiError {

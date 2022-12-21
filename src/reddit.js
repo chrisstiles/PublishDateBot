@@ -155,11 +155,16 @@ function checkSubmission(submission, data) {
           priority: 2,
           enablePuppeteer: false
         })
-        .then(({ publishDate, modifyDate }) => {
+        .then(result => {
+          let { publishDate, modifyDate } = result;
+
+          if (!publishDate) return reject(result);
+
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
           const postDate = moment(
             moment.utc(createdUTC, 'X').format('YYYY-MM-DD')
           );
+
           const outdatedDate = postDate.subtract(time, units);
 
           if (publishDate.isBefore(outdatedDate, 'd')) {
@@ -170,8 +175,7 @@ function checkSubmission(submission, data) {
                 modifyDate.isAfter(outdatedDate, 'd') &&
                 modifyDate.isAfter(publishDate, 'd')
               ) {
-                resolve();
-                return;
+                return resolve();
               }
             }
 
