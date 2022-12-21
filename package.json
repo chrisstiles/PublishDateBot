@@ -10,10 +10,10 @@
   "main": "./src/server.js",
   "scripts": {
     "dev": "concurrently \"npm:watch-server\" \"npm:watch-worker\"",
-    "start": "node ./src/server.js",
+    "start": "node --experimental-loader newrelic/esm-loader.mjs ./src/server.js",
     "scss": "node-sass --watch ./src/public/css -o ./src/public/css --output-style compressed",
-    "watch-server": "nodemon ./src/server.js",
-    "watch-worker": "nodemon ./src/worker.js",
+    "watch-server": "nodemon --experimental-loader newrelic/esm-loader.mjs ./src/server.js",
+    "watch-worker": "nodemon --experimental-loader newrelic/esm-loader.mjs ./src/worker.js",
     "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn ./src/reddit.js"
   },
   "nodemonConfig": {
@@ -38,6 +38,7 @@
     "lodash": "^4.17.19",
     "memory-cache": "^0.2.0",
     "moment": "^2.24.0",
+    "newrelic": "^9.7.4",
     "node-fetch": "^3.2.0",
     "node-sass": "^7.0.1",
     "npm": "^8.5.2",

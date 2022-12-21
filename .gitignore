@@ -16,3 +16,6 @@ docker-compose.yml
 
 # Redis
 dump.rdb
+
+# New Relic
+newrelic_agent.log

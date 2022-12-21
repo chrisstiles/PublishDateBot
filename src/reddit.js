@@ -12,7 +12,6 @@ import dotenv from 'dotenv';
 // Initialize
 ///////////////////////
 
-// Environment Variables
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }

@@ -1,3 +1,4 @@
+import 'newrelic';
 import {
   getPublishDate,
   fetchArticle,
@@ -11,7 +12,7 @@ import {
   fetchMethods,
   DateNotFoundError
 } from './util.js';
-import { Worker, UnrecoverableError } from 'bullmq';
+import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import throng from 'throng';
 import basePuppeteer from 'puppeteer';
