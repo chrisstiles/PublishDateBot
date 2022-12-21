@@ -150,7 +150,11 @@ function checkSubmission(submission, data) {
       const { time, units, ignoreModified } = data;
 
       parser
-        .get(url, { checkModified: !ignoreModified, priority: 2 })
+        .get(url, {
+          checkModified: !ignoreModified,
+          priority: 2,
+          enablePuppeteer: false
+        })
         .then(({ publishDate, modifyDate }) => {
           publishDate = moment(publishDate.format('YYYY-MM-DD'));
           const postDate = moment(

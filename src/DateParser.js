@@ -14,7 +14,6 @@ const connection = new Redis(process.env.REDIS_URL, {
 
 let queueEvents = null;
 let workerQueue = null;
-// let resultsQueue = null;
 
 export class DateParser {
   static instance = new DateParser();
@@ -67,49 +66,7 @@ export class DateParser {
         }
       });
     }
-
-    // if (!resultsQueue) {
-    //   resultsQueue = new Worker('date-results', DateParser.done, {
-    //     connection,
-    //     defaultJobOptions: {
-    //       removeOnComplete: true,
-    //       removeOnFail: true
-    //     }
-    //   });
-    // }
   }
-
-  // static async done({ id: jobId, data = {} }) {
-  //   const { id, url, type, disableCache, result = null } = data;
-  //   const job = DateParser.jobs[id];
-
-  //   if (!job) {
-  //     console.error('Job not found', { jobId, ...data });
-  //     return;
-  //   }
-
-  //   clearTimeout(job.timer);
-
-  //   const isSuccess = type === 'success' && result;
-  //   const { callbacks } = job;
-
-  //   if (isSuccess) {
-  //     const { publishDate, modifyDate } = result;
-  //     result.publishDate = publishDate ? moment(publishDate) : null;
-  //     result.modifyDate = modifyDate ? moment(modifyDate) : null;
-  //   }
-
-  //   if (!disableCache) {
-  //     cache.put(url, result, cacheDuration);
-  //   }
-
-  //   delete DateParser.jobs[id];
-
-  //   callbacks?.forEach(({ resolve, reject }) => {
-  //     const returnFn = isSuccess ? resolve : reject;
-  //     returnFn(result);
-  //   });
-  // }
 
   async get(url, opts = {}) {
     if (url && url.trim().match(/\.pdf($|\?)/)) {
@@ -166,41 +123,6 @@ export class DateParser {
     } catch (error) {
       return getError(error, url);
     }
-
-    // return new Promise((resolve, reject) => {
-    //   if (DateParser.jobs[jobId]) {
-    //     DateParser.jobs[jobId].callacks.push({ resolve, reject });
-
-    //     clearTimeout(DateParser.jobs[jobId].timer);
-
-    //     DateParser.jobs[jobId].timer = setTimeout(() => {
-    //       const callbacks = DateParser.jobs[jobId]?.callbacks;
-
-    //       delete DateParser.jobs[jobId];
-
-    //       callbacks?.forEach(({ reject }) => {
-    //         reject(new ApiError(url, `Fetch timeout: ${url}`));
-    //       })
-    //     }, args.timeout + 100);
-    //   } else {
-    //     DateParser.jobs[jobId] = {
-    //       callbacks: [{ resolve, reject }],
-    //       timer: setTimeout(() => {
-    //         const callbacks = DateParser.jobs[jobId]?.callbacks;
-
-    //         delete DateParser.jobs[jobId];
-
-    //         callbacks?.forEach(({ reject }) => {
-    //           reject(new ApiError(url, `Fetch timeout: ${url}`));
-    //         });
-    //       }, args.timeout + 100)
-    //     };
-
-    //     workerQueue
-    //       .add('get-date', { ...args, jobId }, { priority: args.priority })
-    //       .catch(reject);
-    //   }
-    // });
   }
 
   async close({ puppeteerCloseDelay, clearCache } = {}) {

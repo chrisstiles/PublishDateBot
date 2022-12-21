@@ -109,14 +109,6 @@ async function start() {
     };
   })();
 
-  // const resultsQueue = new Queue('date-results', {
-  //   connection,
-  //   defaultJobOptions: {
-  //     removeOnComplete: 10,
-  //     removeOnFail: 10
-  //   }
-  // });
-
   async function execute(job) {
     const {
       url,
