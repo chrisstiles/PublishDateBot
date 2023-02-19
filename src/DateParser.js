@@ -5,8 +5,9 @@ import cache from 'memory-cache';
 import moment from 'moment';
 import _ from 'lodash';
 
-const cacheDuration = 1000 * 60 * 10; // 10 minutes
-const maxCacheItems = 1000;
+export const cacheDuration = 1000 * 60 * 10; // 10 minutes
+export const maxCacheItems = 1000;
+export const maxRetries = 2;
 
 const connection = new Redis(process.env.REDIS_URL, {
   maxRetriesPerRequest: null
@@ -58,7 +59,7 @@ export class DateParser {
         defaultJobOptions: {
           removeOnComplete: 10,
           removeOnFail: 10,
-          attempts: 2,
+          attempts: maxRetries,
           backoff: {
             type: 'exponential',
             delay: 1000
@@ -106,23 +107,25 @@ export class DateParser {
 
       const data = await job.waitUntilFinished(queueEvents, args.timeout);
 
-      const isSuccess = data.type === 'success' && data.result;
-      const result = isSuccess ? data.result : getError(data.result, url);
+      if (data.type !== 'success') {
+        const error = getError(data.result, url);
 
-      if (isSuccess) {
-        const { publishDate, modifyDate } = result;
-        result.publishDate = publishDate ? moment(publishDate) : null;
-        result.modifyDate = modifyDate ? moment(modifyDate) : null;
-      } else {
-        result.publishDate = null;
-        result.modifyDate = null;
+        if (!opts.disableCache && error instanceof ApiError) {
+          cache.put(url, error, cacheDuration);
+        }
+
+        throw error;
       }
+
+      const { publishDate, modifyDate } = data.result;
+      data.result.publishDate = publishDate ? moment(publishDate) : null;
+      data.result.modifyDate = modifyDate ? moment(modifyDate) : null;
 
       if (!opts.disableCache) {
-        cache.put(url, result, cacheDuration);
+        cache.put(url, data.result, cacheDuration);
       }
 
-      return result;
+      return data.result;
     } catch (workerError) {
       const error = getError(workerError, url);
 

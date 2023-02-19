@@ -12,6 +12,7 @@ import {
   fetchMethods,
   DateNotFoundError
 } from './util.js';
+import { cacheDuration, maxCacheItems, maxRetries } from './DateParser.js';
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import throng from 'throng';
@@ -21,9 +22,6 @@ import { addExtra } from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 import cache from 'memory-cache';
-
-const cacheDuration = 1000 * 60 * 10; // 10 minutes
-const maxCacheItems = 1000;
 
 const connection = new Redis(process.env.REDIS_URL, {
   maxRetriesPerRequest: null
@@ -260,12 +258,25 @@ async function start() {
         result: data,
         ...sharedResultArgs
       };
-    } catch (error) {
+    } catch (e) {
       setTimeout(() => {
         closeCluster(closeDelay - 100);
       }, 100);
 
-      throw getError(error, url);
+      const error = getError(e, url);
+
+      if (
+        job.attemptsMade < maxRetries &&
+        !(error instanceof DateNotFoundError)
+      ) {
+        throw error;
+      }
+
+      return {
+        type: 'error',
+        result: error,
+        ...sharedResultArgs
+      };
     }
   }
 
@@ -287,14 +298,18 @@ async function start() {
 
   worker.on('failed', ({ id, data }, error) => {
     if (!(error instanceof DateNotFoundError)) {
-      console.error('WORKER FAILED', { id, url: data.url, error });
+      console.error('WORKER FAILED', {
+        id,
+        url: data.url,
+        error: getError(error)
+      });
     }
 
     closeCluster();
   });
 
   worker.on('error', error => {
-    console.error('WORKER ERROR', error);
+    console.error('WORKER ERROR', getError(error));
     closeCluster();
   });
 

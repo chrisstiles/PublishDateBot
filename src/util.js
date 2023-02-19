@@ -73,6 +73,7 @@ export class ApiError {
     this.url = url;
     this.message = message || `API error: ${url}`;
     this.type = type;
+    this.errorType = 'ApiError';
   }
 
   get name() {
@@ -83,6 +84,8 @@ export class ApiError {
 export class DateNotFoundError extends ApiError {
   constructor(url, metadata) {
     super(url, `No date found: ${url}`, 'date-not-found');
+
+    this.errorType = 'DateNotFoundError';
 
     if (_.isPlainObject(metadata)) {
       this.metadata = metadata;
@@ -98,6 +101,8 @@ export class ArticleFetchError extends ApiError {
   constructor(url, metadata) {
     super(url, `Page not found: ${url}`, 'loading-failed');
 
+    this.errorType = 'ArticleFetchError';
+
     if (_.isPlainObject(metadata)) {
       this.metadata = metadata;
     }
@@ -105,11 +110,26 @@ export class ArticleFetchError extends ApiError {
 }
 
 export function getError(error, url) {
+  if (_.isPlainObject(error) && error.errorType) {
+    switch (error.errorType) {
+      case 'ArticleFetchError':
+        return new ArticleFetchError(url, error.metadata);
+      case 'DateNotFoundError':
+        return new DateNotFoundError(url, error.metadata);
+      default:
+        return new ApiError(url, error.message);
+    }
+  }
+
   if (error.name === 'AggregateError') {
     error = error.errors.find(e => e instanceof ApiError) ?? error;
   }
 
   if (error instanceof ApiError) return error;
+
+  if (error.message?.match(/timed? ?out/i)) {
+    return new ArticleFetchError(url);
+  }
 
   const maxErrorLength = 800;
   const message =
