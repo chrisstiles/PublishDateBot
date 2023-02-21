@@ -182,13 +182,24 @@ export function decodeHtml(str) {
 export function includesUrl(data, url) {
   if (!(url instanceof URL)) url = new URL(url);
 
-  const dataset = new Set(data);
   const root = url.hostname.replace(/^www\./, '');
 
-  return (
-    dataset.has(root) ||
-    (url.hostname.includes('www.') && dataset.has(url.hostname))
-  );
+  return !!data.find(item => {
+    if (
+      item === root ||
+      (url.hostname.includes('www.') && item === url.hostname)
+    ) {
+      return true;
+    }
+
+    if (!item.includes(root) || !item.includes('/')) {
+      return false;
+    }
+
+    // Check if only certain paths for a domain are included
+    const path = item.replace(/[^/]*\//, '/');
+    return url.pathname.startsWith(path);
+  });
 }
 
 // prettier-ignore

@@ -1228,17 +1228,17 @@ function cleanup(dom) {
 ////////////////////////////
 
 if (process.argv[2]) {
-  const worker = new Worker('./src/worker.js');
-  const parser = await import('./DateParser');
+  // const worker = new Worker('./src/worker.js');
+  // const parser = await import('./DateParser.js');
   const start = hrtime.bigint();
   const checkModified = process.argv[3] !== 'false';
 
   try {
     // Get HTML with both puppeteer as a fallback if fetch fails
-    const data = await parser.get(process.argv[2], checkModified);
+    // const data = await parser.get(process.argv[2], checkModified);
 
     // Get HTML with fetch only
-    // const data = await getPublishDate(process.argv[2], checkModified);
+    const data = await getPublishDate(process.argv[2], checkModified);
 
     const end = hrtime.bigint();
     const duration = Number(end - start) / 1e9;
@@ -1252,7 +1252,7 @@ if (process.argv[2]) {
     console.error(error);
   }
 
-  await parser.close({ clearCache: true });
-  await worker.terminate();
+  // await parser.close({ clearCache: true });
+  // await worker.terminate();
   process.exit();
 }
