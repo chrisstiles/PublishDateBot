@@ -8,12 +8,6 @@ import prettier from 'prettier';
 
 const router = express.Router();
 
-router.get('/data', cors(), (_, res) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.send(data);
-});
-
 router.get('/ping', cors(), (_, res) => res.sendStatus(200));
 
 router.get('/get-date', cors(), async (req, res) => {
@@ -98,6 +92,26 @@ router.get('/get-date', cors(), async (req, res) => {
 
     res.json(data);
   }
+});
+
+// Returns up-to-date configuration data to Chrome extension,
+// removing configurations that are only used on the backend
+const configData = _.cloneDeep(data);
+
+if (configData.sites) {
+  Object.keys(configData.sites).forEach(key => {
+    delete configData.sites[key].metadata;
+
+    if (!Object.keys(configData.sites[key]).length) {
+      delete configData.sites[key];
+    }
+  });
+}
+
+router.get('/data', cors(), (_, res) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.json(configData);
 });
 
 export default router;
