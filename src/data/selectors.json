@@ -2,7 +2,7 @@
   "publish": [
     "ArticleTitle",
     "Article__Date",
-    "Timestamp-time",
+    "article-cover__date",
     "article-date",
     "article-dateline",
     "article-info",
@@ -49,6 +49,7 @@
     "story-meta",
     "timeinfo-txt",
     "timestamp",
+    "Timestamp-time",
     "tk-soleil",
     "tmt-news-meta__date",
     "video-player__metric",

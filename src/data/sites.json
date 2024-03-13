@@ -7,6 +7,7 @@
   },
   "cnn.com": "meta[property='article:published_time']",
   "connexionfrance.com": "[class^=ArticleDate_articleDate]",
+  "deepmind.google": ".article-cover__date",
   "deutschlandfunk.de": ".articlehead time",
   "en.farsnews.ir": ".date-news",
   "exit.al": ".published.updated",
