@@ -1,5 +1,5 @@
-import { Worker } from 'node:worker_threads';
-import { hrtime } from 'node:process';
+// import { Worker } from 'node:worker_threads';
+// import { hrtime } from 'node:process';
 import jsdom from 'jsdom';
 import moment from 'moment';
 import _ from 'lodash';
@@ -1227,32 +1227,32 @@ function cleanup(dom) {
 // Testing
 ////////////////////////////
 
-if (process.argv[2]) {
-  // const worker = new Worker('./src/worker.js');
-  // const parser = await import('./DateParser.js');
-  const start = hrtime.bigint();
-  const checkModified = process.argv[3] !== 'false';
+// if (process.argv[2]) {
+//   // const worker = new Worker('./src/worker.js');
+//   // const parser = await import('./DateParser.js');
+//   const start = hrtime.bigint();
+//   const checkModified = process.argv[3] !== 'false';
 
-  try {
-    // Get HTML with both puppeteer as a fallback if fetch fails
-    // const data = await parser.get(process.argv[2], checkModified);
+//   try {
+//     // Get HTML with both puppeteer as a fallback if fetch fails
+//     // const data = await parser.get(process.argv[2], checkModified);
 
-    // Get HTML with fetch only
-    const data = await getPublishDate(process.argv[2], checkModified);
+//     // Get HTML with fetch only
+//     const data = await getPublishDate(process.argv[2], checkModified);
 
-    const end = hrtime.bigint();
-    const duration = Number(end - start) / 1e9;
+//     const end = hrtime.bigint();
+//     const duration = Number(end - start) / 1e9;
 
-    data.publishDate = data.publishDate?.format('YYYY-MM-DD') ?? null;
-    data.modifyDate = data.modifyDate?.format('YYYY-MM-DD') ?? null;
+//     data.publishDate = data.publishDate?.format('YYYY-MM-DD') ?? null;
+//     data.modifyDate = data.modifyDate?.format('YYYY-MM-DD') ?? null;
 
-    console.log(`Finished in ${duration} seconds`);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
+//     console.log(`Finished in ${duration} seconds`);
+//     console.log(data);
+//   } catch (error) {
+//     console.error(error);
+//   }
 
-  // await parser.close({ clearCache: true });
-  // await worker.terminate();
-  process.exit();
-}
+//   // await parser.close({ clearCache: true });
+//   // await worker.terminate();
+//   process.exit();
+// }

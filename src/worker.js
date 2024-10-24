@@ -14,7 +14,8 @@ import {
 } from './util.js';
 import { cacheDuration, maxCacheItems, maxRetries } from './DateParser.js';
 import { Worker } from 'bullmq';
-import Redis from 'ioredis';
+// import Redis from 'ioredis';
+import getRedisConnection from './redis.js';
 import throng from 'throng';
 import basePuppeteer from 'puppeteer';
 import { Cluster } from 'puppeteer-cluster';
@@ -23,10 +24,11 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 import cache from 'memory-cache';
 
-const connection = new Redis(process.env.REDIS_URL, {
-  maxRetriesPerRequest: null
-});
+// const connection = new Redis(process.env.REDIS_URL, {
+//   maxRetriesPerRequest: null
+// });
 
+const connection = getRedisConnection();
 const puppeteer = addExtra(basePuppeteer);
 
 puppeteer.use(StealthPlugin());
