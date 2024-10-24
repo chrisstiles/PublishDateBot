@@ -1,6 +1,5 @@
 import { ApiError, getId, getError, ensureCacheSize } from './util.js';
 import { Queue, QueueEvents } from 'bullmq';
-// import Redis from 'ioredis';
 import getRedisConnection from './redis.js';
 import cache from 'memory-cache';
 import moment from 'moment';
@@ -10,9 +9,6 @@ export const cacheDuration = 1000 * 60 * 10; // 10 minutes
 export const maxCacheItems = 1000;
 export const maxRetries = 2;
 
-// const connection = new Redis(process.env.REDIS_URL, {
-//   maxRetriesPerRequest: null
-// });
 const connection = getRedisConnection();
 
 let queueEvents = null;
