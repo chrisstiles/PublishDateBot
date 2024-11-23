@@ -9,12 +9,6 @@
       "regex": "\\[<month>.*\\d{4}\\]"
     },
     {
-      "name": "worldnews",
-      "time": 10,
-      "units": "days",
-      "text": "As per /r/worldnews/wiki submissions should be to articles published within the last week."
-    },
-    {
       "name": "Coronavirus",
       "time": 2,
       "units": "months"
