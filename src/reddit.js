@@ -256,9 +256,9 @@ async function submitComment(submission, publishDate, modifyDate, data) {
     &nbsp;  
     &nbsp;  
     
-    ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, send me a message if you notice an error or would like this bot added to your subreddit. You can also download my) [^(Chrome Extension)](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en) ^(if you'd like to see publish dates added to all article links on reddit.)
+    ^(This bot finds outdated articles. It's impossible to be 100% accurate on every site, send me a message if you notice an error or would like this bot added to your subreddit. You can download my Chrome Extension if you'd like publish date labels added to article links on all subreddits.)
     
-    [^(Send Feedback)](${feedbackUrl})  ^(|)  [^(Github - Bot)](https://github.com/chrisstiles/PublishDateBot)  ^(|)  [^(Github - Chrome Extension)](https://github.com/chrisstiles/Reddit-Publish-Date)
+    [Chrome Extension](https://chrome.google.com/webstore/detail/reddit-publish-date/cfkbacelanhcgpkjaocblkpacofnccip?hl=en)  |  [GitHub](https://github.com/chrisstiles/PublishDateBot)  |  [Send Feedback](${feedbackUrl})
   `;
 
   await submission.reply(stripIndent(comment));
