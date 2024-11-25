@@ -152,7 +152,7 @@ function checkSubmission(submission, data) {
         .get(url, {
           checkModified: !ignoreModified,
           priority: 2,
-          enablePuppeteer: false
+          enablePuppeteer: true
         })
         .then(result => {
           let { publishDate, modifyDate } = result;
