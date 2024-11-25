@@ -14,7 +14,8 @@
     "scss": "node-sass --watch ./src/public/css -o ./src/public/css --output-style compressed",
     "watch-server": "nodemon --experimental-loader newrelic/esm-loader.mjs ./src/server.js",
     "watch-worker": "nodemon --experimental-loader newrelic/esm-loader.mjs ./src/worker.js",
-    "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn ./src/reddit.js"
+    "reddit": "node --optimize_for_size --max_old_space_size=460 --gc_interval=100 --unhandled-rejections=warn ./src/reddit.js",
+    "heroku-postbuild": "mkdir ./.cache && mv /app/.cache/puppeteer ./.cache"
   },
   "nodemonConfig": {
     "ignore": [
