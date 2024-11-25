@@ -3,6 +3,7 @@
 import jsdom from 'jsdom';
 import moment from 'moment';
 import _ from 'lodash';
+import dotenv from 'dotenv';
 import {
   fetchTimeout,
   freeRegExp,
@@ -24,6 +25,10 @@ import {
   selectors,
   tlds
 } from './data/index.js';
+
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const { JSDOM } = jsdom;
 const dateLocations = {
@@ -120,8 +125,10 @@ export async function fetchArticle(
 
   if (shouldAddAdditionalHeaders) {
     options.headers['referrer'] = new URL(url).origin;
-    options.headers['user-agent'] =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36';
+
+    if (process.env.SCRAPER_USER_AGENT) {
+      options.headers['user-agent'] = process.env.SCRAPER_USER_AGENT;
+    }
   }
 
   try {
@@ -1228,17 +1235,17 @@ function cleanup(dom) {
 ////////////////////////////
 
 // if (process.argv[2]) {
-//   // const worker = new Worker('./src/worker.js');
-//   // const parser = await import('./DateParser.js');
+//   const worker = new Worker('./src/worker.js');
+//   const parser = (await import('./DateParser.js')).default;
 //   const start = hrtime.bigint();
 //   const checkModified = process.argv[3] !== 'false';
 
 //   try {
 //     // Get HTML with both puppeteer as a fallback if fetch fails
-//     // const data = await parser.get(process.argv[2], checkModified);
+//     const data = await parser.get(process.argv[2], checkModified);
 
 //     // Get HTML with fetch only
-//     const data = await getPublishDate(process.argv[2], checkModified);
+//     // const data = await getPublishDate(process.argv[2], checkModified);
 
 //     const end = hrtime.bigint();
 //     const duration = Number(end - start) / 1e9;
@@ -1252,7 +1259,7 @@ function cleanup(dom) {
 //     console.error(error);
 //   }
 
-//   // await parser.close({ clearCache: true });
-//   // await worker.terminate();
+//   await parser.close({ clearCache: true });
+//   await worker.terminate();
 //   process.exit();
 // }

@@ -40,6 +40,12 @@
     }
   },
   "quantamagazine.org": ".post__title__author-date",
+  "reuters.com": {
+    "metadata": {
+      "organization": "Reuters",
+      "fetchWith": "puppeteer"
+    }
+  },
   "science20.com": "#article-info",
   "sciencedaily.com": "#date_posted",
   "sciencedirect.com": {

@@ -22,6 +22,11 @@ import { addExtra } from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 import cache from 'memory-cache';
+import dotenv from 'dotenv';
+
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const connection = getRedisConnection();
 const puppeteer = addExtra(basePuppeteer);
@@ -133,6 +138,10 @@ async function start() {
       return await cluster.execute(url, async ({ page }) => {
         await page.setJavaScriptEnabled(false);
         await page.setRequestInterception(true);
+
+        if (process.env.SCRAPER_USER_AGENT) {
+          await page.setUserAgent(process.env.SCRAPER_USER_AGENT);
+        }
 
         page.on('request', request => {
           if (request.resourceType() === 'document') {
