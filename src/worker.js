@@ -1,4 +1,3 @@
-import 'newrelic';
 import {
   getPublishDate,
   fetchArticle,
