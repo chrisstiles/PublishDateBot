@@ -5,6 +5,9 @@
     "method": "html",
     "key": "last_updated\":{\"date"
   },
+  "bloomberg.com": {
+    "method": "url"
+  },
   "cnn.com": "meta[property='article:published_time']",
   "connexionfrance.com": "[class^=ArticleDate_articleDate]",
   "deepmind.google": ".article-cover__date",
