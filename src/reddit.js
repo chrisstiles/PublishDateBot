@@ -131,7 +131,7 @@ async function checkSubreddit(data, botActivity) {
                   });
               });
             },
-            { concurrency: 2 }
+            { concurrency: 1 }
           ).then(resolve);
         });
       });
