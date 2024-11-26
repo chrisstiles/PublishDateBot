@@ -16,6 +16,4 @@ if (redisUrl.includes('rediss://')) {
   };
 }
 
-export default function getRedisConnection() {
-  return new Redis(redisUrl, options);
-}
+export default new Redis(redisUrl, options);

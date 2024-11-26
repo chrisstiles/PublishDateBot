@@ -13,7 +13,7 @@ import {
 } from './util.js';
 import { cacheDuration, maxCacheItems, maxRetries } from './DateParser.js';
 import { Worker } from 'bullmq';
-import getRedisConnection from './redis.js';
+import connection from './redis.js';
 import throng from 'throng';
 import basePuppeteer from 'puppeteer';
 import { Cluster } from 'puppeteer-cluster';
@@ -27,7 +27,6 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
-const connection = getRedisConnection();
 const puppeteer = addExtra(basePuppeteer);
 
 puppeteer.use(StealthPlugin());
