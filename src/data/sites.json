@@ -6,7 +6,10 @@
     "key": "last_updated\":{\"date"
   },
   "bloomberg.com": {
-    "method": "url"
+    "method": "url",
+    "metadata": {
+      "organization": "Bloomberg"
+    }
   },
   "cnn.com": "meta[property='article:published_time']",
   "connexionfrance.com": "[class^=ArticleDate_articleDate]",
