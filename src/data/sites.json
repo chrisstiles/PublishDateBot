@@ -29,6 +29,7 @@
     }
   },
   "kathmandupost.com": ".page-detail--content .updated-time",
+  "lowyinstitute.org": ".article-main-image + div > .txt-center:first-child",
   "msn.com": ".authortime-info time[datetime]",
   "muslim.co": "li[itemprop='datePublished']",
   "nytimes.com": {
