@@ -297,7 +297,7 @@ async function start() {
           return Promise.reject(new Error('Invalid job name'));
       }
     },
-    { connection, concurrency: 10 }
+    { connection, concurrency: 7 }
   );
 
   worker.on('failed', ({ id, data }, error) => {
