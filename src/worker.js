@@ -157,11 +157,15 @@ async function start() {
         const html = await page.content();
 
         if (!response.ok()) {
-          if (response.status() === 404) {
-            throw new ArticleFetchError(
-              url,
-              getArticleMetadata(html, url, true)
-            );
+          const status = response.status();
+          const metadata = getArticleMetadata(html, url, true);
+
+          if (status === 401 || status === 403) {
+            throw new DateNotFoundError(url, metadata);
+          }
+
+          if (status === 404) {
+            throw new ArticleFetchError(url, metadata);
           }
 
           return Promise.reject('Error loading page');
